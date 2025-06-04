@@ -1,0 +1,22 @@
+
+
+# Node
+/node_modules
+
+# IDEs and editors
+.idea/
+.project
+App.zip
+express_proj.zip
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
+
+# Miscellaneous
+
+# System files

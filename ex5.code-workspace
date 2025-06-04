@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"prettier.tabWidth": 2,
+		"prettier.useEditorConfig": false,
+		"prettier.trailingComma": "all",
+		"prettier.useTabs": true,
+		"liveServer.settings.multiRootWorkspaceName": "express",
+		"editor.autoClosingQuotes": "languageDefined",
+		"javascript.preferences.quoteStyle": "single",
+		"markdown.preview.typographer": false,
+		"json.format.enable": true,
+		"javascript.format.enable": true,
+		"eslint.format.enable": true,
+		"prettier.jsxSingleQuote": true
+	}
+}

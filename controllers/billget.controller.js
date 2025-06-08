@@ -47,6 +47,7 @@ const DataTable = async (queryObj = false) => {
 				\`t1\`.\`end_date\` AS \`end_date\`,
 				\`t1\`.\`duration\` AS \`duration\`,
 				\`t1\`.\`is_fixed\` AS \`is_fixed\`,
+				\`t1\`.\`auto_renew\` AS \`auto_renew\`,
 				\`t1\`.\`is_closed\` AS \`is_closed\`,
 				\`t1\`.\`is_onetime\` AS \`is_onetime\`,
 				\`t1\`.\`renew_date\` AS \`renew_date\`,
@@ -1073,6 +1074,37 @@ const UpdateT1 = async (req, res, next) => {
 
 	if (validation) {
 		if (
+			req.body.renewAmount === undefined ||
+			req.body.renewAmount == "" ||
+			req.body.renewAmount === null
+		) {
+			validation = false;
+			validationMsg = "Amount required";
+			validationData.push({
+				field: "renewAmount",
+				msg: validationMsg,
+			});
+		} else {
+			renewAmount = req.body.renewAmount;
+		}
+	}
+
+	if (validation) {
+		renewAmount = parseFloat(renewAmount);
+		if (renewAmount === undefined || isNaN(renewAmount) || renewAmount < 0) {
+			validation = false;
+			validationMsg = "Amount is not valid";
+			validationData.push({
+				field: "renewAmount",
+				msg: validationMsg,
+			});
+		} else {
+			renewAmount = nf.dec(renewAmount);
+		}
+	}
+
+	if (validation) {
+		if (
 			req.body.note === undefined ||
 			req.body.note == "" ||
 			req.body.note === null
@@ -1172,6 +1204,7 @@ const UpdateT1 = async (req, res, next) => {
 			\`end_date\` = '${end_date}',
 			\`renew_date\` = '${renew_date}',
 			\`auto_renew\` = ${autoRenew},
+			\`renew_amount\` = ${renewAmount},
 			\`note\` = ${note},
 			\`updated_date\` = '${cdate}'
 		WHERE
@@ -1820,6 +1853,37 @@ const UpdateT2 = async (req, res, next) => {
 
 	if (validation) {
 		if (
+			req.body.renewAmount === undefined ||
+			req.body.renewAmount == "" ||
+			req.body.renewAmount === null
+		) {
+			validation = false;
+			validationMsg = "Amount required";
+			validationData.push({
+				field: "renewAmount",
+				msg: validationMsg,
+			});
+		} else {
+			renewAmount = req.body.renewAmount;
+		}
+	}
+
+	if (validation) {
+		renewAmount = parseFloat(renewAmount);
+		if (renewAmount === undefined || isNaN(renewAmount) || renewAmount < 0) {
+			validation = false;
+			validationMsg = "Amount is not valid";
+			validationData.push({
+				field: "renewAmount",
+				msg: validationMsg,
+			});
+		} else {
+			renewAmount = nf.dec(renewAmount);
+		}
+	}
+
+	if (validation) {
+		if (
 			req.body.startDate === undefined ||
 			req.body.startDate == "" ||
 			req.body.startDate === null
@@ -1950,6 +2014,7 @@ const UpdateT2 = async (req, res, next) => {
 			\`duration\` = ${duration},
 			\`renew_date\` = '${renewDate}',
 			\`auto_renew\` = ${autoRenew},
+			\`renew_amount\` = ${renewAmount},
 			\`remind_date\` = '${remindDate}',
 			\`note\` = ${note},
 			\`updated_date\` = '${cdate}'

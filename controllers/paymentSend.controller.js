@@ -35,6 +35,7 @@ const DataTable = async (queryObj = false) => {
 				\`t1\`.\`created_date\` AS \`created_date\`,
 				\`t1\`.\`amount\` AS \`amount\`,
 				\`t1\`.\`note\` AS \`note\`,
+				\`t1\`.\`trxid\` AS \`trxid\`,
 				\`vendor\`.\`name\` AS \`vendor__name\`,
 				\`bank\`.\`name\` AS \`bank__name\`
 			FROM 

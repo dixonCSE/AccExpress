@@ -447,6 +447,7 @@ const userDetail = async (req, res, next) => {
 						t1.wallet__id AS wallet__id, 
 						t1.bank__id AS bank__id, 
 						t1.payment AS payment, 
+						t1.trxid AS trxid, 
 						t1.note AS note, 
 						t1.created_date AS created_date,
 	

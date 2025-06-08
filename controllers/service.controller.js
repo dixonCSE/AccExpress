@@ -1451,21 +1451,21 @@ const userServiceInsert = async (req, res, next) => {
 	}
 
 	if (validation) {
-		if (req.body.bank__id == undefined || req.body.bank__id == "") {
-			validation = false;
-			validationMsg = "Bank required";
-			validationData.push({
-				field: "bank",
-				msg: validationMsg,
-			});
+		if (
+			req.body.bank__id === undefined ||
+			req.body.bank__id == "" ||
+			req.body.bank__id === null
+		) {
+			t2 = false;
 		} else {
+			t2 = true;
 			bank__id = req.body.bank__id;
 		}
 	}
 
-	if (validation) {
+	if (validation && t2) {
 		bank__id = parseInt(bank__id);
-		if (bank__id == undefined || isNaN(bank__id) || bank__id < 1) {
+		if (bank__id === undefined || isNaN(bank__id) || bank__id < 1) {
 			validation = false;
 			validationMsg = "Bank is not valid";
 			validationData.push({
@@ -1475,7 +1475,7 @@ const userServiceInsert = async (req, res, next) => {
 		}
 	}
 
-	if (validation) {
+	if (validation && t2) {
 		rowBank = await db.getRow({
 			table: "bank",
 			filter: bank__id,
@@ -1531,15 +1531,24 @@ const userServiceInsert = async (req, res, next) => {
 			});
 		}
 	}
+	//
 
 	if (validation) {
-		if (req.body.payment == undefined || req.body.payment == "") {
-			validation = false;
-			validationMsg = "Service payment required";
-			validationData.push({
-				field: "payment",
-				msg: validationMsg,
-			});
+		if (
+			req.body.payment === undefined ||
+			req.body.payment == "" ||
+			req.body.payment === null
+		) {
+			if (t2) {
+				validation = false;
+				validationMsg = "Service payment required";
+				validationData.push({
+					field: "payment",
+					msg: validationMsg,
+				});
+			} else {
+				payment = 0;
+			}
 		} else {
 			payment = req.body.payment;
 		}
@@ -1547,7 +1556,7 @@ const userServiceInsert = async (req, res, next) => {
 
 	if (validation) {
 		payment = parseFloat(payment);
-		if (payment == undefined || isNaN(payment)) {
+		if (payment === undefined || isNaN(payment) || payment < 0) {
 			validation = false;
 			validationMsg = "Service payment is not valid";
 			validationData.push({
@@ -1556,17 +1565,21 @@ const userServiceInsert = async (req, res, next) => {
 			});
 		} else {
 			payment = nf.dec(payment);
+			if (payment <= 0.1) {
+				t2 = false;
+			}
 		}
 	}
 
 	if (validation) {
-		if (payment < 0) {
-			validation = false;
-			validationMsg = "Service payment < 0";
-			validationData.push({
-				field: "payment",
-				msg: validationMsg,
-			});
+		if (
+			req.body.trxid === undefined ||
+			req.body.trxid == "" ||
+			req.body.trxid === null
+		) {
+			trxid = `null`;
+		} else {
+			trxid = `'${req.body.trxid.trim().toString()}'`;
 		}
 	}
 	////
@@ -1774,21 +1787,22 @@ const userServiceInsert = async (req, res, next) => {
 	sqlArray.push(sqltmp);
 
 	if (tmpPayment > 0) {
-		if (payment > 0) {
+		if (payment > 0 && t2) {
 			sqltmp = `
-				INSERT INTO payment_receive (
-					user__id,
-					service__id,
-					user_service__id,
-					bank__id,
-					wallet__id,
-					payment,
+				INSERT INTO \`payment_receive\` (
+					\`user__id\`,
+					\`service__id\`,
+					\`user_service__id\`,
+					\`bank__id\`,
+					\`wallet__id\`,
+					\`payment\`,
+					\`trxid\`,
 
-					table_name,
-					row__id,
+					\`table_name\`,
+					\`row__id\`,
 
-					created_date,
-					updated_date
+					\`created_date\`,
+					\`updated_date\`
 					) VALUES ( 
 						${user__id},
 						${service__id},
@@ -1796,6 +1810,7 @@ const userServiceInsert = async (req, res, next) => {
 						${bank__id},
 						11,
 						${payment},
+						${trxid},
 
 						'user_service',
 						@liid,
@@ -2036,14 +2051,6 @@ const userBoostServiceInsert = async (req, res, next) => {
 	// return false;
 
 	if (validation) {
-		if (req.body.note == undefined || req.body.note == "") {
-			note = `null`;
-		} else {
-			note = `'${req.body.note.trim().toString()}'`;
-		}
-	}
-
-	if (validation) {
 		if (req.body.user__id == undefined || req.body.user__id == "") {
 			validation = false;
 			validationMsg = "User required";
@@ -2085,21 +2092,21 @@ const userBoostServiceInsert = async (req, res, next) => {
 	}
 
 	if (validation) {
-		if (req.body.bank__id == undefined || req.body.bank__id == "") {
-			validation = false;
-			validationMsg = "Bank required";
-			validationData.push({
-				field: "bank",
-				msg: validationMsg,
-			});
+		if (
+			req.body.bank__id === undefined ||
+			req.body.bank__id == "" ||
+			req.body.bank__id === null
+		) {
+			t2 = false;
 		} else {
+			t2 = true;
 			bank__id = req.body.bank__id;
 		}
 	}
 
-	if (validation) {
+	if (validation && t2) {
 		bank__id = parseInt(bank__id);
-		if (bank__id == undefined || isNaN(bank__id) || bank__id < 1) {
+		if (bank__id === undefined || isNaN(bank__id) || bank__id < 1) {
 			validation = false;
 			validationMsg = "Bank is not valid";
 			validationData.push({
@@ -2109,7 +2116,7 @@ const userBoostServiceInsert = async (req, res, next) => {
 		}
 	}
 
-	if (validation) {
+	if (validation && t2) {
 		rowBank = await db.getRow({
 			table: "bank",
 			filter: bank__id,
@@ -2167,13 +2174,21 @@ const userBoostServiceInsert = async (req, res, next) => {
 	}
 
 	if (validation) {
-		if (req.body.payment == undefined || req.body.payment == "") {
-			validation = false;
-			validationMsg = "Service payment required";
-			validationData.push({
-				field: "payment",
-				msg: validationMsg,
-			});
+		if (
+			req.body.payment === undefined ||
+			req.body.payment == "" ||
+			req.body.payment === null
+		) {
+			if (t2) {
+				validation = false;
+				validationMsg = "Service payment required";
+				validationData.push({
+					field: "payment",
+					msg: validationMsg,
+				});
+			} else {
+				payment = 0;
+			}
 		} else {
 			payment = req.body.payment;
 		}
@@ -2181,7 +2196,7 @@ const userBoostServiceInsert = async (req, res, next) => {
 
 	if (validation) {
 		payment = parseFloat(payment);
-		if (payment == undefined || isNaN(payment)) {
+		if (payment === undefined || isNaN(payment) || payment < 0) {
 			validation = false;
 			validationMsg = "Service payment is not valid";
 			validationData.push({
@@ -2190,17 +2205,21 @@ const userBoostServiceInsert = async (req, res, next) => {
 			});
 		} else {
 			payment = nf.dec(payment);
+			if (payment <= 0.1) {
+				t2 = false;
+			}
 		}
 	}
 
 	if (validation) {
-		if (payment < 0) {
-			validation = false;
-			validationMsg = "Service payment < 0";
-			validationData.push({
-				field: "payment",
-				msg: validationMsg,
-			});
+		if (
+			req.body.trxid === undefined ||
+			req.body.trxid == "" ||
+			req.body.trxid === null
+		) {
+			trxid = `null`;
+		} else {
+			trxid = `'${req.body.trxid.trim().toString()}'`;
 		}
 	}
 
@@ -2560,7 +2579,7 @@ const userBoostServiceInsert = async (req, res, next) => {
 	sqlArray.push(sqltmp);
 
 	if (tmpPayment > 0) {
-		if (payment > 0) {
+		if (payment > 0 && t2) {
 			sqltmp = `
 				INSERT INTO payment_receive (
 					user__id,
@@ -2569,6 +2588,7 @@ const userBoostServiceInsert = async (req, res, next) => {
 					bank__id,
 					wallet__id,
 					payment,
+					trxid,
 
 					table_name,
 					row__id,
@@ -2582,6 +2602,7 @@ const userBoostServiceInsert = async (req, res, next) => {
 						${bank__id},
 						11,
 						${payment},
+						${trxid},
 
 						'user_service',
 						@liid,
@@ -2880,21 +2901,21 @@ const userDurationServiceInsert = async (req, res, next) => {
 	}
 
 	if (validation) {
-		if (req.body.bank__id == undefined || req.body.bank__id == "") {
-			validation = false;
-			validationMsg = "Bank required";
-			validationData.push({
-				field: "bank",
-				msg: validationMsg,
-			});
+		if (
+			req.body.bank__id === undefined ||
+			req.body.bank__id == "" ||
+			req.body.bank__id === null
+		) {
+			t2 = false;
 		} else {
+			t2 = true;
 			bank__id = req.body.bank__id;
 		}
 	}
 
-	if (validation) {
+	if (validation && t2) {
 		bank__id = parseInt(bank__id);
-		if (bank__id == undefined || isNaN(bank__id) || bank__id < 1) {
+		if (bank__id === undefined || isNaN(bank__id) || bank__id < 1) {
 			validation = false;
 			validationMsg = "Bank is not valid";
 			validationData.push({
@@ -2904,7 +2925,7 @@ const userDurationServiceInsert = async (req, res, next) => {
 		}
 	}
 
-	if (validation) {
+	if (validation && t2) {
 		rowBank = await db.getRow({
 			table: "bank",
 			filter: bank__id,
@@ -2962,13 +2983,21 @@ const userDurationServiceInsert = async (req, res, next) => {
 	}
 
 	if (validation) {
-		if (req.body.payment == undefined || req.body.payment == "") {
-			validation = false;
-			validationMsg = "Service payment required";
-			validationData.push({
-				field: "payment",
-				msg: validationMsg,
-			});
+		if (
+			req.body.payment === undefined ||
+			req.body.payment == "" ||
+			req.body.payment === null
+		) {
+			if (t2) {
+				validation = false;
+				validationMsg = "Service payment required";
+				validationData.push({
+					field: "payment",
+					msg: validationMsg,
+				});
+			} else {
+				payment = 0;
+			}
 		} else {
 			payment = req.body.payment;
 		}
@@ -2976,7 +3005,7 @@ const userDurationServiceInsert = async (req, res, next) => {
 
 	if (validation) {
 		payment = parseFloat(payment);
-		if (payment == undefined || isNaN(payment)) {
+		if (payment === undefined || isNaN(payment) || payment < 0) {
 			validation = false;
 			validationMsg = "Service payment is not valid";
 			validationData.push({
@@ -2985,17 +3014,21 @@ const userDurationServiceInsert = async (req, res, next) => {
 			});
 		} else {
 			payment = nf.dec(payment);
+			if (payment <= 0.1) {
+				t2 = false;
+			}
 		}
 	}
 
 	if (validation) {
-		if (payment < 0) {
-			validation = false;
-			validationMsg = "Service payment < 0";
-			validationData.push({
-				field: "payment",
-				msg: validationMsg,
-			});
+		if (
+			req.body.trxid === undefined ||
+			req.body.trxid == "" ||
+			req.body.trxid === null
+		) {
+			trxid = `null`;
+		} else {
+			trxid = `'${req.body.trxid.trim().toString()}'`;
 		}
 	}
 
@@ -3170,6 +3203,14 @@ const userDurationServiceInsert = async (req, res, next) => {
 		}
 	}
 
+	if (validation) {
+		if (req.body.note == undefined || req.body.note == "") {
+			note = `null`;
+		} else {
+			note = `'${req.body.note.trim().toString()}'`;
+		}
+	}
+
 	if (validation == false) {
 		res.status(200).json({
 			error: true,
@@ -3286,7 +3327,7 @@ const userDurationServiceInsert = async (req, res, next) => {
 	sqlArray.push(sqltmp);
 
 	if (tmpPayment > 0) {
-		if (payment > 0) {
+		if (payment > 0 && t2) {
 			sqltmp = `
 				INSERT INTO payment_receive (
 					user__id,
@@ -3295,6 +3336,7 @@ const userDurationServiceInsert = async (req, res, next) => {
 					bank__id,
 					wallet__id,
 					payment,
+					trxid,
 
 					table_name,
 					row__id,
@@ -3308,6 +3350,7 @@ const userDurationServiceInsert = async (req, res, next) => {
 						${bank__id},
 						11,
 						${payment},
+						${trxid},
 
 						'user_service',
 						@liid,

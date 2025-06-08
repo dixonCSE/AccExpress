@@ -94,17 +94,22 @@ const receiveDataTable = async (queryObj = false) => {
 	offset = offset || db.offset;
 	limit = limit || db.limit;
 
+	colMap = {
+		id: "`t1`.`id`",
+		user__id: "`t1`.`user__id`",
+	};
+
 	srcStr = "";
 	if (search) {
 		srcStr = `
 			( 
-				t3.user_name LIKE '%${search}%' 
+				\`t3\`.\`user_name\` LIKE '%${search}%' 
 				OR 
-				t3.company LIKE '%${search}%' 
+				\`t3\`.\`company\` LIKE '%${search}%' 
 				OR 
-				t3.phone LIKE '%${search}%' 
+				\`t3\`.\`phone\` LIKE '%${search}%' 
 				OR 
-				t4.name LIKE '%${search}%'
+				\`t4\`.\`name\` LIKE '%${search}%'
 			) 
 			AND 
 		`;
@@ -113,30 +118,31 @@ const receiveDataTable = async (queryObj = false) => {
 	const rows = await db.query(
 		`
 			SELECT 
-				t1.id AS id, 
-				t1.user__id AS user__id, 
-				t1.user_service__id AS user_service__id, 
-				t1.wallet__id AS wallet__id, 
-				t1.bank__id AS bank__id, 
-				t1.payment AS payment, 
-				t1.note AS note, 
-				t1.created_date AS created_date,
+				\`t1\`.\`id\` AS \`id\`, 
+				\`t1\`.\`user__id\` AS \`user__id\`, 
+				\`t1\`.\`user_service__id\` AS \`user_service__id\`, 
+				\`t1\`.\`wallet__id\` AS \`wallet__id\`, 
+				\`t1\`.\`bank__id\` AS \`bank__id\`, 
+				\`t1\`.\`payment\` AS \`payment\`, 
+				\`t1\`.\`trxid\` AS \`trxid\`, 
+				\`t1\`.\`note\` AS \`note\`, 
+				\`t1\`.\`created_date\` AS \`created_date\`,
 
-				t3.user_name AS user__user_name, 
-				t3.image AS user__image, 
-				t3.company AS user__company, 
-				t3.phone AS user__phone, 
-				t4.name AS bank__name, 
-				t5.name AS wallet__name
+				\`t3\`.\`user_name\` AS \`user__user_name\`, 
+				\`t3\`.\`image\` AS \`user__image\`, 
+				\`t3\`.\`company\` AS \`user__company\`, 
+				\`t3\`.\`phone\` AS \`user__phone\`, 
+				\`t4\`.\`name\` AS \`bank__name\`, 
+				\`t5\`.\`name\` AS \`wallet__name\`
 			FROM 
-				payment_receive AS t1 
-				LEFT JOIN user AS t3 ON t3.id = t1.user__id 
-				LEFT JOIN bank AS t4 ON t4.id = t1.bank__id 
-				LEFT JOIN wallet AS t5 ON t5.id = t1.wallet__id
+				\`payment_receive\` AS \`t1\` 
+				LEFT JOIN \`user\` AS \`t3\` ON \`t3\`.\`id\` = \`t1\`.\`user__id\` 
+				LEFT JOIN \`bank\` AS \`t4\` ON \`t4\`.\`id\` = \`t1\`.\`bank__id\` 
+				LEFT JOIN \`wallet\` AS \`t5\` ON \`t5\`.\`id\` = \`t1\`.\`wallet__id\`
 			WHERE
 				${srcStr}
-				t1.is_delete = 0
-			ORDER BY ${sort_col} ${sort_dir}
+				\`t1\`.\`is_delete\` = 0
+			ORDER BY ${colMap[sort_col]} ${sort_dir}
 			LIMIT ${offset},${limit}
 		`,
 		[],
@@ -145,15 +151,15 @@ const receiveDataTable = async (queryObj = false) => {
 	const count = await db.query(
 		`
 			SELECT 
-				IFNULL(COUNT(t1.id), 0) AS cnt
+				IFNULL(COUNT(\`t1\`.\`id\`), 0) AS \`cnt\`
 			FROM 
-				payment_receive AS t1 
-				LEFT JOIN user AS t3 ON t3.id = t1.user__id 
-				LEFT JOIN bank AS t4 ON t4.id = t1.bank__id 
-				LEFT JOIN wallet AS t5 ON t5.id = t1.wallet__id
+				\`payment_receive\` AS \`t1\` 
+				LEFT JOIN \`user\` AS \`t3\` ON \`t3\`.\`id\` = \`t1\`.\`user__id\` 
+				LEFT JOIN \`bank\` AS \`t4\` ON \`t4\`.\`id\` = \`t1\`.\`bank__id\` 
+				LEFT JOIN \`wallet\` AS \`t5\` ON \`t5\`.\`id\` = \`t1\`.\`wallet__id\`
 			WHERE
 				${srcStr}
-				t1.is_delete = 0
+				\`t1\`.\`is_delete\` = 0
 		`,
 		[],
 	);

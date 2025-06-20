@@ -551,13 +551,13 @@ const InsertT1 = async (req, res, next) => {
 
 	if (validation) {
 		if (
-			req.body.name === undefined ||
-			req.body.name == "" ||
-			req.body.name === null
+			req.body.billName === undefined ||
+			req.body.billName == "" ||
+			req.body.billName === null
 		) {
 			nameStr = `null`;
 		} else {
-			nameStr = `'${req.body.name.trim().toString()}'`;
+			nameStr = `'${req.body.billName.trim().toString()}'`;
 		}
 	}
 
@@ -797,6 +797,20 @@ const InsertT1 = async (req, res, next) => {
 		}
 	}
 
+	if (validation) {
+		if (
+			req.body.is_fixed === undefined ||
+			req.body.is_fixed == "" ||
+			req.body.is_fixed === null
+		) {
+			is_fixed = false;
+			isFixed = 0;
+		} else {
+			is_fixed = !!req.body.is_fixed;
+			isFixed = is_fixed ? 1 : 0;
+		}
+	}
+
 	if (validation == false) {
 		res.status(200).json({
 			error: true,
@@ -850,7 +864,7 @@ const InsertT1 = async (req, res, next) => {
 				${dateInt},
 
 				1,
-				0,
+				${isFixed},
 				0,
 				0,
 				1,
@@ -1031,13 +1045,13 @@ const UpdateT1 = async (req, res, next) => {
 
 	if (validation) {
 		if (
-			req.body.name === undefined ||
-			req.body.name == "" ||
-			req.body.name === null
+			req.body.billName === undefined ||
+			req.body.billName == "" ||
+			req.body.billName === null
 		) {
 			nameStr = `null`;
 		} else {
-			nameStr = `'${req.body.name.trim().toString()}'`;
+			nameStr = `'${req.body.billName.trim().toString()}'`;
 		}
 	}
 
@@ -1177,6 +1191,20 @@ const UpdateT1 = async (req, res, next) => {
 		}
 	}
 
+	if (validation) {
+		if (
+			req.body.is_fixed === undefined ||
+			req.body.is_fixed == "" ||
+			req.body.is_fixed === null
+		) {
+			is_fixed = false;
+			isFixed = 0;
+		} else {
+			is_fixed = !!req.body.is_fixed;
+			isFixed = is_fixed ? 1 : 0;
+		}
+	}
+
 	if (validation == false) {
 		res.status(200).json({
 			error: true,
@@ -1204,6 +1232,7 @@ const UpdateT1 = async (req, res, next) => {
 			\`end_date\` = '${end_date}',
 			\`renew_date\` = '${renew_date}',
 			\`auto_renew\` = ${autoRenew},
+			\`is_fixed\` = ${isFixed},
 			\`renew_amount\` = ${renewAmount},
 			\`note\` = ${note},
 			\`updated_date\` = '${cdate}'
@@ -1554,6 +1583,20 @@ const InsertT2 = async (req, res, next) => {
 		} else {
 			auto_renew = !!req.body.auto_renew;
 			autoRenew = auto_renew ? 1 : 0;
+		}
+	}
+
+	if (validation) {
+		if (
+			req.body.is_fixed === undefined ||
+			req.body.is_fixed == "" ||
+			req.body.is_fixed === null
+		) {
+			is_fixed = false;
+			isFixed = 0;
+		} else {
+			is_fixed = !!req.body.is_fixed;
+			isFixed = is_fixed ? 1 : 0;
 		}
 	}
 
@@ -1970,6 +2013,20 @@ const UpdateT2 = async (req, res, next) => {
 		}
 	}
 
+	if (validation) {
+		if (
+			req.body.is_fixed === undefined ||
+			req.body.is_fixed == "" ||
+			req.body.is_fixed === null
+		) {
+			is_fixed = false;
+			isFixed = 0;
+		} else {
+			is_fixed = !!req.body.is_fixed;
+			isFixed = is_fixed ? 1 : 0;
+		}
+	}
+
 	if (validation == false) {
 		res.status(200).json({
 			error: true,
@@ -2014,6 +2071,7 @@ const UpdateT2 = async (req, res, next) => {
 			\`duration\` = ${duration},
 			\`renew_date\` = '${renewDate}',
 			\`auto_renew\` = ${autoRenew},
+			\`is_fixed\` = ${isFixed},
 			\`renew_amount\` = ${renewAmount},
 			\`remind_date\` = '${remindDate}',
 			\`note\` = ${note},

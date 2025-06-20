@@ -58,7 +58,32 @@ const DataTable = async (queryObj = false) => {
 						\`t3\`.\`bill__id\` = \`t1\`.\`id\`
 						AND 
 						\`t3\`.\`is_delete\` = 0
-				) AS \`total_payable\`
+				) AS \`total_payable\`,
+				(
+					(
+						SELECT 
+							IFNULL(SUM(\`t3\`.\`amount\`), 0) AS \`total_payable\`
+						FROM 
+							\`bill_get\` AS \`t3\`
+						WHERE 
+							\`t3\`.\`bill__id\` = \`t1\`.\`id\`
+							AND 
+							\`t3\`.\`is_delete\` = 0
+					) 
+					- 
+					(
+						SELECT 
+							IFNULL(SUM(\`t2\`.\`amount\`), 0) AS \`total_paid\`
+						FROM 
+							\`payment_send\` AS \`t2\`
+						WHERE 
+							\`t2\`.\`vendor__id\` = \`t1\`.\`id\`
+							AND 
+							\`t2\`.\`vendor_type\` = 'bill'
+							AND 
+							\`t2\`.\`is_delete\` = 0
+					)
+				) AS \`total_due\`
 			FROM 
 				\`bill\` AS \`t1\` 
 				LEFT JOIN \`bill_type\` AS \`bill_type\` ON \`t1\`.\`bill_type__id\` = \`bill_type\`.\`id\`

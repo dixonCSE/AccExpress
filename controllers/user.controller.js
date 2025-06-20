@@ -450,6 +450,7 @@ const userDetail = async (req, res, next) => {
 						t1.trxid AS trxid, 
 						t1.note AS note, 
 						t1.created_date AS created_date,
+						t1.payment_date AS payment_date,
 	
 						t3.user_name AS user__user_name, 
 						t3.image AS user__image, 

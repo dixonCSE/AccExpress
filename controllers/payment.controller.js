@@ -1,4 +1,6 @@
 require("dotenv").config();
+
+const datexTime = require("date-and-time");
 const db = require("../services/db.service");
 const dueService = require("../services/due.service");
 const advSrv = require("../services/adv.service");
@@ -127,6 +129,7 @@ const receiveDataTable = async (queryObj = false) => {
 				\`t1\`.\`trxid\` AS \`trxid\`, 
 				\`t1\`.\`note\` AS \`note\`, 
 				\`t1\`.\`created_date\` AS \`created_date\`,
+				\`t1\`.\`payment_date\` AS \`payment_date\`,
 
 				\`t3\`.\`user_name\` AS \`user__user_name\`, 
 				\`t3\`.\`image\` AS \`user__image\`, 
@@ -268,6 +271,7 @@ const receiveGetByUser = async (req, res, next) => {
 					t1.payment AS payment, 
 					t1.note AS note, 
 					t1.created_date AS created_date,
+					t1.payment_date AS payment_date,
 
 					t3.user_name AS user__user_name, 
 					t3.image AS user__image, 
@@ -500,6 +504,26 @@ const receiveInsert = async (req, res, next) => {
 	}
 
 	if (validation) {
+		if (req.body.paymentDate == undefined || req.body.paymentDate == "") {
+			validation = false;
+			validationMsg = "Start Date required";
+			validationData.push({
+				field: "paymentDate",
+				msg: validationMsg,
+			});
+		} else {
+			paymentDate = datexTime.format(
+				new Date(req.body.paymentDate),
+				"YYYY-MM-DD HH:mm:ss",
+			);
+			paymentDate2 = datexTime.format(
+				new Date(req.body.paymentDate),
+				"YYYY-MM-DD",
+			);
+		}
+	}
+
+	if (validation) {
 		if (req.body.isSms == undefined || req.body.isSms == "") {
 			isSms = false;
 		} else {
@@ -572,6 +596,8 @@ const receiveInsert = async (req, res, next) => {
 
 				\`trxid\`,
 				\`note\`,
+				
+				\`payment_date\`,
 				\`created_date\`,
 				\`updated_date\`
 			) 
@@ -584,6 +610,7 @@ const receiveInsert = async (req, res, next) => {
 
 				${trxid},
 				${note},
+				'${paymentDate}',
 				'${cdate}',
 				'${cdate}'
 			);

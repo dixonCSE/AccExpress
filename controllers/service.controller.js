@@ -1402,14 +1402,6 @@ const userServiceInsert = async (req, res, next) => {
 	// return false;
 
 	if (validation) {
-		if (req.body.note == undefined || req.body.note == "") {
-			note = "";
-		} else {
-			note = req.body.note.trim().toString();
-		}
-	}
-
-	if (validation) {
 		if (req.body.user__id == undefined || req.body.user__id == "") {
 			validation = false;
 			validationMsg = "User required";
@@ -1703,6 +1695,14 @@ const userServiceInsert = async (req, res, next) => {
 		}
 	}
 
+	if (validation) {
+		if (req.body.note == undefined || req.body.note == "") {
+			note = `null`;
+		} else {
+			note = `'${req.body.note.trim().toString()}'`;
+		}
+	}
+
 	if (validation == false) {
 		res.status(200).json({
 			error: true,
@@ -1769,7 +1769,7 @@ const userServiceInsert = async (req, res, next) => {
 				${tmp1},
 				${due},
 
-				'${note}',
+				${note},
 
 				${rowService.is_install},
 				0,
@@ -1801,6 +1801,7 @@ const userServiceInsert = async (req, res, next) => {
 					\`table_name\`,
 					\`row__id\`,
 
+					\`payment_date\`,
 					\`created_date\`,
 					\`updated_date\`
 					) VALUES ( 
@@ -1815,6 +1816,7 @@ const userServiceInsert = async (req, res, next) => {
 						'user_service',
 						@liid,
 
+						'${cdate}',
 						'${cdate}',
 						'${cdate}'
 					);
@@ -2445,6 +2447,14 @@ const userBoostServiceInsert = async (req, res, next) => {
 		}
 	}
 
+	if (validation) {
+		if (req.body.note == undefined || req.body.note == "") {
+			note = `null`;
+		} else {
+			note = `'${req.body.note.trim().toString()}'`;
+		}
+	}
+
 	if (validation == false) {
 		res.status(200).json({
 			error: true,
@@ -2593,6 +2603,7 @@ const userBoostServiceInsert = async (req, res, next) => {
 					table_name,
 					row__id,
 
+					payment_date,
 					created_date,
 					updated_date
 					) VALUES ( 
@@ -2607,6 +2618,7 @@ const userBoostServiceInsert = async (req, res, next) => {
 						'user_service',
 						@liid,
 
+						'${cdate}',
 						'${cdate}',
 						'${cdate}'
 					);
@@ -3341,6 +3353,7 @@ const userDurationServiceInsert = async (req, res, next) => {
 					table_name,
 					row__id,
 
+					payment_date,
 					created_date,
 					updated_date
 					) VALUES ( 
@@ -3355,6 +3368,7 @@ const userDurationServiceInsert = async (req, res, next) => {
 						'user_service',
 						@liid,
 
+						'${cdate}',
 						'${cdate}',
 						'${cdate}'
 					);
@@ -4055,21 +4069,344 @@ const userServiceUpdate = async (req, res, next) => {
 
 	sqltmp = `
 		UPDATE 
-			user_service 
+			\`user_service\` 
 		SET 
-			user__id = ${user__id},
-			service__id = ${service__id},
+			\`user__id\` = ${user__id},
+			\`service__id\` = ${service__id},
 
-			buy_price = ${buyAmount},
-			price = ${saleAmount},
-			discount = ${discount},
-			net = ${net},
+			\`buy_price\` = ${buyAmount},
+			\`price\` = ${saleAmount},
+			\`discount\` = ${discount},
+			\`net\` = ${net},
 
-			note = ${note},
+			\`note\` = ${note},
 
-			updated_date = '${cdate}'
+			\`updated_date\` = '${cdate}'
 		WHERE 
-			id = ${row.id}
+			\`id\` = ${row.id}
+		;
+	`;
+	sqlArray.push(sqltmp);
+
+	try {
+		const sqlres = await db.trx(sqlArray);
+		if (sqlres) {
+			res.status(200).json({
+				error: false,
+				type: "success",
+				msg: "success",
+			});
+			recalUserService(row.id);
+			return true;
+		} else {
+			res.status(200).json({
+				error: true,
+				type: "error",
+				msg: "sql error",
+			});
+			return true;
+		}
+	} catch (err) {
+		res.status(200).json({
+			error: true,
+			type: "error",
+			msg: "db transaction try error",
+			dev: sqlArray,
+			dev2: err,
+		});
+		return true;
+	}
+};
+
+const userBoostServiceUpdate = async (req, res, next) => {
+	const cdate = dateTime.cDateTime();
+
+	/////////////////////////////////////////////// begin validation ///////////////////////////////////////////////
+	validation = true;
+	validationData = [];
+	validationMsg = false;
+
+	if (validation) {
+		if (req.body.id == undefined || req.body.id == "") {
+			validation = false;
+			validationMsg = "User Service ID required";
+			validationData.push({
+				field: "id",
+				msg: validationMsg,
+			});
+		} else {
+			id = req.body.id;
+		}
+	}
+
+	if (validation) {
+		id = parseInt(id);
+		if (id == undefined || isNaN(id) || id < 1) {
+			validation = false;
+			validationMsg = "User Service ID is not valid";
+			validationData.push({
+				field: "id",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		row = await db.getRow({
+			table: "user_service",
+			filter: id,
+		});
+
+		if (row == false) {
+			validation = false;
+			validationMsg = "User Service ID is not found";
+			validationData.push({
+				field: "id",
+				msg: validationMsg,
+			});
+		} else {
+			//
+		}
+	}
+
+	if (validation) {
+		if (req.body.user__id == undefined || req.body.user__id == "") {
+			validation = false;
+			validationMsg = "User required";
+			validationData.push({
+				field: "user__id",
+				msg: validationMsg,
+			});
+		} else {
+			user__id = req.body.user__id;
+		}
+	}
+
+	if (validation) {
+		user__id = parseInt(user__id);
+		if (user__id == undefined || isNaN(user__id) || user__id < 1) {
+			validation = false;
+			validationMsg = "User is not valid";
+			validationData.push({
+				field: "user__id",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		rowUser = await db.getRow({
+			table: "user",
+			filter: user__id,
+		});
+
+		if (rowUser == false) {
+			validation = false;
+			validationMsg = "Customer is not found";
+			validationData.push({
+				field: "user__id",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		if (req.body.service__id == undefined || req.body.service__id == "") {
+			validation = false;
+			validationMsg = "Sevice required";
+			validationData.push({
+				field: "service__id",
+				msg: validationMsg,
+			});
+		} else {
+			service__id = req.body.service__id;
+		}
+	}
+
+	if (validation) {
+		service__id = parseInt(service__id);
+		if (service__id == undefined || isNaN(service__id) || service__id < 1) {
+			validation = false;
+			validationMsg = "Service is not valid";
+			validationData.push({
+				field: "service__id",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		rowService = await db.getRow({
+			table: "service",
+			filter: service__id,
+		});
+
+		if (rowService == false) {
+			validation = false;
+			validationMsg = "Service is not found";
+			validationData.push({
+				field: "service__id",
+				msg: validationMsg,
+			});
+		}
+	}
+	////
+
+	if (validation) {
+		if (req.body.buyAmount === undefined || req.body.buyAmount === "") {
+			validation = false;
+			validationMsg = "Service Buy Price required";
+			validationData.push({
+				field: "buyAmount",
+				msg: validationMsg,
+			});
+		} else {
+			buyAmount = req.body.buyAmount;
+		}
+	}
+
+	if (validation) {
+		buyAmount = parseFloat(buyAmount);
+		if (buyAmount == undefined || isNaN(buyAmount)) {
+			validation = false;
+			validationMsg = "Service Buy Price is not valid";
+			validationData.push({
+				field: "buyAmount",
+				msg: validationMsg,
+			});
+		} else {
+			buyAmount = nf.dec(buyAmount);
+		}
+	}
+
+	if (validation) {
+		if (buyAmount < 0) {
+			validation = false;
+			validationMsg = "Service Buy Price < 0";
+			validationData.push({
+				field: "buyAmount",
+				msg: validationMsg,
+			});
+		}
+	}
+	/////
+
+	if (validation) {
+		if (req.body.saleAmount == undefined || req.body.saleAmount == "") {
+			validation = false;
+			validationMsg = "Service Sale Price required";
+			validationData.push({
+				field: "saleAmount",
+				msg: validationMsg,
+			});
+		} else {
+			saleAmount = req.body.saleAmount;
+		}
+	}
+
+	if (validation) {
+		saleAmount = parseFloat(saleAmount);
+		if (saleAmount == undefined || isNaN(saleAmount)) {
+			validation = false;
+			validationMsg = "Service Sale Price is not valid";
+			validationData.push({
+				field: "saleAmount",
+				msg: validationMsg,
+			});
+		} else {
+			saleAmount = nf.dec(saleAmount);
+		}
+	}
+
+	if (validation) {
+		if (saleAmount < 0) {
+			validation = false;
+			validationMsg = "Service Sale Price < 0";
+			validationData.push({
+				field: "saleAmount",
+				msg: validationMsg,
+			});
+		}
+	}
+	///
+	if (validation) {
+		if (req.body.discount === undefined || req.body.discount === "") {
+			validation = false;
+			validationMsg = "Service Buy Price required";
+			validationData.push({
+				field: "discount",
+				msg: validationMsg,
+			});
+		} else {
+			discount = req.body.discount;
+		}
+	}
+
+	if (validation) {
+		discount = parseFloat(discount);
+		if (discount == undefined || isNaN(discount)) {
+			validation = false;
+			validationMsg = "Service discount is not valid";
+			validationData.push({
+				field: "discount",
+				msg: validationMsg,
+			});
+		} else {
+			discount = nf.dec(discount);
+		}
+	}
+
+	if (validation) {
+		if (discount < 0) {
+			validation = false;
+			validationMsg = "Service discount < 0";
+			validationData.push({
+				field: "discount",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		if (req.body.note == undefined || req.body.note == "") {
+			note = `null`;
+		} else {
+			note = `'${req.body.note.trim().toString()}'`;
+		}
+	}
+
+	if (validation == false) {
+		res.status(200).json({
+			error: true,
+			type: "error",
+			msg: validationMsg ? validationMsg : "data validation error",
+			validation: validationData,
+		});
+		return false;
+	}
+	//////////////////////////////////////////////// end validation ////////////////////////////////////////////////
+
+	let sqlArray = [];
+	let sqltmp;
+	let net = nf.dec(saleAmount - discount);
+
+	sqltmp = `
+		UPDATE 
+			\`user_service\` 
+		SET 
+			\`user__id\` = ${user__id},
+			\`service__id\` = ${service__id},
+
+			\`buy_price\` = ${buyAmount},
+			\`price\` = ${saleAmount},
+			\`discount\` = ${discount},
+			\`net\` = ${net},
+
+			\`note\` = ${note},
+
+			\`updated_date\` = '${cdate}'
+		WHERE 
+			\`id\` = ${row.id}
 		;
 	`;
 	sqlArray.push(sqltmp);
@@ -4404,6 +4741,7 @@ module.exports = {
 	userServiceUpdate,
 	userServiceDelete,
 	userBoostServiceInsert,
+	userBoostServiceUpdate,
 	userDurationServiceInsert,
 	userServiceClose,
 };

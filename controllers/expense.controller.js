@@ -16,36 +16,36 @@ const dataTable = async (queryObj = false) => {
 	srcStr = "";
 	if (search) {
 		srcStr = `( 
-				t1.amount = ${search}
+				\`t1\`.\`amount\` = ${search}
 				OR 
-				t1.name LIKE '%${search}%' 
+				\`t1\`.\`name\` LIKE '%${search}%' 
 				OR 
-				t2.name LIKE '%${search}%' 
+				\`t2\`.\`name\` LIKE '%${search}%' 
 			) AND `;
 	}
 
 	const rows = await db.query(
 		`
 			SELECT 
-				t1.id AS id, 
-				t1.name AS name, 
-				t1.bank__id AS bank__id, 
-				t1.wallet__id AS wallet__id, 
-				t1.expense_type__id AS expense_type__id, 
-				t1.type_name AS type_name, 
-				t1.amount AS amount, 
-				t1.created_date AS created_date,
+				\`t1\`.\`id\` AS \`id\`, 
+				\`t1\`.\`name\` AS \`name\`, 
+				\`t1\`.\`bank__id\` AS \`bank__id\`, 
+				\`t1\`.\`wallet__id\` AS \`wallet__id\`, 
+				\`t1\`.\`expense_type__id\` AS \`expense_type__id\`, 
+				\`t1\`.\`type_name\` AS \`type_name\`, 
+				\`t1\`.\`amount\` AS \`amount\`, 
+				\`t1\`.\`created_date\` AS \`created_date\`,
 
-				t2.name AS bank__name, 
-				t2.image AS bank__image, 
-				t3.name AS wallet__name
+				\`t2\`.\`name\` AS \`bank__name\`, 
+				\`t2\`.\`image\` AS \`bank__image\`, 
+				\`t3\`.\`name\` AS \`wallet__name\`
 			FROM 
-				expense AS t1
-				LEFT JOIN bank AS t2 ON t2.id = t1.bank__id 
-				LEFT JOIN wallet AS t3 ON t3.id = t1.wallet__id
+				\`expense\` AS \`t1\`
+				LEFT JOIN \`bank\` AS \`t2\` ON \`t2\`.\`id\` = \`t1\`.\`bank__id\` 
+				LEFT JOIN \`wallet\` AS \`t3\` ON \`t3\`.\`id\` = \`t1\`.\`wallet__id\`
 			WHERE
 				${srcStr}
-				t1.is_delete = 0
+				\`t1\`.\`is_delete\` = 0
 			ORDER BY ${sort_col} ${sort_dir}
 			LIMIT ${offset},${limit}
 		`,
@@ -55,14 +55,14 @@ const dataTable = async (queryObj = false) => {
 	const count = await db.query(
 		`
 			SELECT 
-				IFNULL(COUNT(*), 0) AS cnt
+				IFNULL(COUNT(*), 0) AS \`cnt\`
 			FROM 
-				expense AS t1
-				LEFT JOIN bank AS t2 ON t2.id = t1.bank__id 
-				LEFT JOIN wallet AS t3 ON t3.id = t1.wallet__id
+				\`expense\` AS \`t1\`
+				LEFT JOIN \`bank\` AS \`t2\` ON \`t2\`.\`id\` = \`t1\`.\`bank__id\` 
+				LEFT JOIN \`wallet\` AS \`t3\` ON \`t3\`.\`id\` = \`t1\`.\`wallet__id\`
 			WHERE
 				${srcStr}
-				t1.is_delete = 0
+				\`t1\`.\`is_delete\` = 0
 		`,
 		[],
 	);
@@ -383,28 +383,28 @@ const Insert = async (req, res, next) => {
 	let sqltmp;
 
 	sqltmp = `
-			INSERT INTO expense (
-				name,
-				type_name,
+		INSERT INTO \`expense\` (
+			\`name\`,
+			\`type_name\`,
 
-				bank__id,
-				wallet__id,
-				amount,
+			\`bank__id\`,
+			\`wallet__id\`,
+			\`amount\`,
 
-				created_date,
-				updated_date
-				) VALUES (
-					'${sname}',
-					'${type_name}',
-	
-					${bank__id},
-					11,
-					${amount},
-	
-					'${cdate}',
-					'${cdate}'
-				);
-		`;
+			\`created_date\`,
+			\`updated_date\`
+			) VALUES (
+				'${sname}',
+				'${type_name}',
+
+				${bank__id},
+				11,
+				${amount},
+
+				'${cdate}',
+				'${cdate}'
+			);
+	`;
 	sqlArray.push(sqltmp);
 
 	sqltmp = "SET @liid = LAST_INSERT_ID();";
@@ -607,15 +607,15 @@ const Update = async (req, res, next) => {
 
 	sqltmp = `
 		Update 
-			expense 
+			\`expense\` 
 		SET 
-			name = '${sname}',
-			type_name = '${type_name}',
-			bank__id = ${bank__id},
-			amount = ${amount},
-			updated_date = '${cdate}'
+			\`name\` = '${sname}',
+			\`type_name\` = '${type_name}',
+			\`bank__id\` = ${bank__id},
+			\`amount\` = ${amount},
+			\`updated_date\` = '${cdate}'
 		WHERE 
-			id = ${id}
+			\`id\` = ${id}
 		;
 	`;
 	sqlArray.push(sqltmp);
@@ -711,13 +711,13 @@ const Delete = async (req, res, next) => {
 	let sqltmp;
 
 	sqltmp = `
-		Update 
-			expense 
+		UPDATE
+			\`expense\` 
 		SET 
-			is_delete = 1,
-			updated_date = '${cdate}'
+			\`is_delete\` = 1,
+			\`updated_date\` = '${cdate}'
 		WHERE 
-			id = ${id}
+			\`id\` = ${id}
 		;
 	`;
 

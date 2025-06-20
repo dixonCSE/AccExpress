@@ -10,6 +10,8 @@ const sms = require("../services/sms.service.js");
 const dueService = require("../services/due.service.js");
 const advSrv = require("../services/adv.service.js");
 
+// hello check
+
 const xRemindSms = async (req, res, next) => {
 	const cdate = dateTime.cDateTime();
 	const now = new Date();

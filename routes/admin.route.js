@@ -217,9 +217,11 @@ router.get("/bill-get/:id", billGetController.Get);
 router.post("/bill-get/insert", billGetController.Insert);
 router.post("/bill-get/insert_t1", billGetController.InsertT1);
 router.post("/bill-get/insert_t2", billGetController.InsertT2);
+router.post("/bill-get/insert_t3", billGetController.InsertT3);
 router.post("/bill-get/update", billGetController.Update);
-router.post("/bill-get/update_t2", billGetController.UpdateT2);
 router.post("/bill-get/update_t1", billGetController.UpdateT1);
+router.post("/bill-get/update_t2", billGetController.UpdateT2);
+router.post("/bill-get/update_t3", billGetController.UpdateT3);
 router.delete("/bill-get/delete/:id", billGetController.Delete);
 router.get("/bill-get/close/:id", billGetController.Close);
 

@@ -2111,6 +2111,587 @@ const UpdateT2 = async (req, res, next) => {
 	}
 };
 
+const InsertT3 = async (req, res, next) => {
+	const cdate = dateTime.cDateTime();
+
+	/////////////////////////////////////////////// begin validation ///////////////////////////////////////////////
+	validation = true;
+	validationData = [];
+	validationMsg = false;
+
+	if (validation) {
+		if (
+			req.body.bill__id === undefined ||
+			req.body.bill__id == "" ||
+			req.body.bill__id === null
+		) {
+			validation = false;
+			validationMsg = "Bill required";
+			validationData.push({
+				field: "bill",
+				msg: validationMsg,
+			});
+		} else {
+			bill__id = req.body.bill__id;
+		}
+	}
+
+	if (validation) {
+		bill__id = parseInt(bill__id);
+		if (bill__id === undefined || isNaN(bill__id) || bill__id < 1) {
+			validation = false;
+			validationMsg = "Bill is not valid";
+			validationData.push({
+				field: "bill",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		rowbill = await db.getRow({
+			table: "bill",
+			filter: bill__id,
+		});
+
+		if (rowbill == false) {
+			validation = false;
+			validationMsg = "Bill is not found";
+			validationData.push({
+				field: "bill",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		if (
+			req.body.billName === undefined ||
+			req.body.billName == "" ||
+			req.body.billName === null
+		) {
+			nameStr = `null`;
+		} else {
+			nameStr = `'${req.body.billName.trim().toString()}'`;
+		}
+	}
+
+	if (validation) {
+		if (
+			req.body.bank__id === undefined ||
+			req.body.bank__id == "" ||
+			req.body.bank__id === null
+		) {
+			t2 = false;
+		} else {
+			t2 = true;
+			bank__id = parseInt(req.body.bank__id);
+		}
+	}
+
+	if (validation && t2) {
+		if (bank__id === undefined || isNaN(bank__id) || bank__id < 1) {
+			validation = false;
+			validationMsg = "Bank is not valid";
+			validationData.push({
+				field: "bank",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation && t2) {
+		rowBank = await db.getRow({
+			table: "bank",
+			filter: bank__id,
+		});
+
+		if (rowBank == false) {
+			validation = false;
+			validationMsg = "Bank is not found";
+			validationData.push({
+				field: "bank",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		if (
+			req.body.amount === undefined ||
+			req.body.amount == "" ||
+			req.body.amount === null
+		) {
+			validation = false;
+			validationMsg = "Amount required";
+			validationData.push({
+				field: "amount",
+				msg: validationMsg,
+			});
+		} else {
+			amount = req.body.amount;
+		}
+	}
+
+	if (validation) {
+		amount = parseFloat(amount);
+		if (amount === undefined || isNaN(amount) || amount < 0) {
+			validation = false;
+			validationMsg = "Amount is not valid";
+			validationData.push({
+				field: "amount",
+				msg: validationMsg,
+			});
+		} else {
+			amount = nf.dec(amount);
+		}
+	}
+
+	if (validation && t2) {
+		if (
+			req.body.payAmount === undefined ||
+			req.body.payAmount == "" ||
+			req.body.payAmount === null
+		) {
+			if (t2) {
+				/* validation = false;
+				validationMsg = "Payment required";
+				validationData.push({
+					field: "payAmount",
+					msg: validationMsg,
+				}); */
+				t2 = false;
+			} else {
+				payAmount = 0;
+			}
+		} else {
+			payAmount = parseFloat(req.body.payAmount);
+		}
+	}
+
+	if (validation && t2) {
+		if (payAmount === undefined || isNaN(payAmount) || payAmount < 0) {
+			/* validation = false;
+			validationMsg = "Payment is not valid";
+			validationData.push({
+				field: "payAmount",
+				msg: validationMsg,
+			}); */
+			t2 = false;
+		} else {
+			payAmount = nf.dec(payAmount);
+			if (payAmount <= 0.1) {
+				t2 = false;
+			}
+		}
+	}
+
+	if (validation && t2) {
+		if (
+			req.body.trxid === undefined ||
+			req.body.trxid == "" ||
+			req.body.trxid === null
+		) {
+			trxid = `null`;
+		} else {
+			trxid = `'${req.body.trxid.trim().toString()}'`;
+		}
+	}
+
+	if (validation) {
+		if (
+			req.body.note === undefined ||
+			req.body.note == "" ||
+			req.body.note === null
+		) {
+			note = `null`;
+		} else {
+			note = `'${req.body.note.trim().toString()}'`;
+		}
+	}
+
+	if (validation) {
+		if (
+			req.body.deliveryDate === undefined ||
+			req.body.deliveryDate == "" ||
+			req.body.deliveryDate === null
+		) {
+			validation = false;
+			validationMsg = "Start Date required";
+			validationData.push({
+				field: "deliveryDate",
+				msg: validationMsg,
+			});
+		} else {
+			deliveryDate = datexTime.format(
+				new Date(req.body.deliveryDate),
+				"YYYY-MM-DD 00:00:00",
+			);
+			deliveryDate2 = datexTime.format(
+				new Date(req.body.deliveryDate),
+				"YYYY-MM-DD",
+			);
+		}
+	}
+
+	if (validation == false) {
+		res.status(200).json({
+			error: true,
+			type: "error",
+			msg: validationMsg ? validationMsg : "data validation error",
+			validation: validationData,
+		});
+		return false;
+	}
+	//////////////////////////////////////////////// end validation ////////////////////////////////////////////////
+
+	let sqlArray = [];
+	let sqltmp;
+
+	sqltmp = `
+		INSERT INTO 
+			\`bill_get\` (
+				\`bill__id\`,
+
+				\`name\`,
+				\`amount\`,
+				\`pay_amount\`,
+				
+				\`status__id\`,
+				\`is_fixed\`,
+				\`is_closed\`,
+				\`is_onetime\`,
+				\`set_amount\`,
+
+				\`delivery_date\`,
+
+				\`auto_renew\`,
+				\`renew_amount\`,
+
+				\`note\`,
+				\`created_date\`
+			) VALUES (
+				${bill__id},
+
+				${nameStr},
+				${amount},
+				${amount},
+
+				1,
+				0,
+				1,
+				1,
+				1,
+
+				'${deliveryDate}',
+
+				0,
+				0,
+
+				${note},
+				'${cdate}'
+			);
+	`;
+	sqlArray.push(sqltmp);
+
+	if (t2) {
+		sqltmp = `
+			INSERT INTO 
+				\`payment_send\` (
+					\`creator__id\`,
+					\`vendor__id\`,
+					\`vendor_type\`,
+
+					\`wallet__id\`,
+					\`bank__id\`,
+					\`amount\`,
+					
+					\`trxid\`,
+					\`note\`,
+					\`created_date\`
+				) VALUES (
+					${req.user.id},
+					${bill__id},
+					'bill',
+
+					11,
+					${bank__id},
+					${payAmount},
+
+					${trxid},
+					${note},
+					'${cdate}'
+				);
+		`;
+		sqlArray.push(sqltmp);
+	}
+
+	try {
+		const sqlres = await db.trx(sqlArray);
+		if (sqlres) {
+			resTmp = await billService.recalBill(bill__id);
+			res.status(200).json({
+				error: false,
+				type: "success",
+				msg: "success",
+			});
+			return true;
+		} else {
+			res.status(200).json({
+				error: true,
+				type: "error",
+				msg: "error",
+			});
+			return true;
+		}
+	} catch (err) {
+		res.status(200).json({
+			error: true,
+			type: "error",
+			msg: "db transaction try error",
+			dev: sqlArray,
+			dev2: err,
+		});
+		return true;
+	}
+};
+
+const UpdateT3 = async (req, res, next) => {
+	const cdate = dateTime.cDateTime();
+
+	/////////////////////////////////////////////// begin validation ///////////////////////////////////////////////
+	validation = true;
+	validationData = [];
+	validationMsg = false;
+
+	if (validation) {
+		if (
+			req.body.id === undefined ||
+			req.body.id == "" ||
+			req.body.id === null
+		) {
+			validation = false;
+			validationMsg = "Data ID required";
+			validationData.push({
+				field: "id",
+				msg: validationMsg,
+			});
+		} else {
+			id = req.body.id;
+		}
+	}
+
+	if (validation) {
+		id = parseInt(id);
+		if (id === undefined || isNaN(id) || id < 1) {
+			validation = false;
+			validationMsg = "Data ID is not valid";
+			validationData.push({
+				field: "id",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		row = await db.getRow({
+			table: "bill_get",
+			filter: id,
+		});
+
+		if (row == false) {
+			validation = false;
+			validationMsg = "Data ID is not found";
+			validationData.push({
+				field: "id",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		if (
+			req.body.bill__id === undefined ||
+			req.body.bill__id == "" ||
+			req.body.bill__id === null
+		) {
+			validation = false;
+			validationMsg = "Bill required";
+			validationData.push({
+				field: "bill",
+				msg: validationMsg,
+			});
+		} else {
+			bill__id = req.body.bill__id;
+		}
+	}
+
+	if (validation) {
+		bill__id = parseInt(bill__id);
+		if (bill__id === undefined || isNaN(bill__id) || bill__id < 1) {
+			validation = false;
+			validationMsg = "Bill is not valid";
+			validationData.push({
+				field: "bill",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		rowbill = await db.getRow({
+			table: "bill",
+			filter: bill__id,
+		});
+
+		if (rowbill == false) {
+			validation = false;
+			validationMsg = "Bill is not found";
+			validationData.push({
+				field: "bill",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		if (
+			req.body.billName === undefined ||
+			req.body.billName == "" ||
+			req.body.billName === null
+		) {
+			nameStr = `null`;
+		} else {
+			nameStr = `'${req.body.billName.trim().toString()}'`;
+		}
+	}
+
+	if (validation) {
+		if (
+			req.body.amount === undefined ||
+			req.body.amount == "" ||
+			req.body.amount === null
+		) {
+			validation = false;
+			validationMsg = "Amount required";
+			validationData.push({
+				field: "amount",
+				msg: validationMsg,
+			});
+		} else {
+			amount = req.body.amount;
+		}
+	}
+
+	if (validation) {
+		amount = parseFloat(amount);
+		if (amount === undefined || isNaN(amount) || amount < 0) {
+			validation = false;
+			validationMsg = "Amount is not valid";
+			validationData.push({
+				field: "amount",
+				msg: validationMsg,
+			});
+		} else {
+			amount = nf.dec(amount);
+		}
+	}
+
+	if (validation) {
+		if (
+			req.body.deliveryDate === undefined ||
+			req.body.deliveryDate == "" ||
+			req.body.deliveryDate === null
+		) {
+			validation = false;
+			validationMsg = "Start Date required";
+			validationData.push({
+				field: "deliveryDate",
+				msg: validationMsg,
+			});
+		} else {
+			deliveryDate = datexTime.format(
+				new Date(req.body.deliveryDate),
+				"YYYY-MM-DD 00:00:00",
+			);
+			deliveryDate2 = datexTime.format(
+				new Date(req.body.deliveryDate),
+				"YYYY-MM-DD",
+			);
+		}
+	}
+
+	if (validation) {
+		if (
+			req.body.note === undefined ||
+			req.body.note == "" ||
+			req.body.note === null
+		) {
+			note = `null`;
+		} else {
+			note = `'${req.body.note.trim().toString()}'`;
+		}
+	}
+
+	if (validation == false) {
+		res.status(200).json({
+			error: true,
+			type: "error",
+			msg: validationMsg ? validationMsg : "data validation error",
+			validation: validationData,
+		});
+		return false;
+	}
+	//////////////////////////////////////////////// end validation ////////////////////////////////////////////////
+
+	let sqlArray = [];
+	let sqltmp;
+
+	sqltmp = `
+		UPDATE
+			\`bill_get\`
+		SET
+			\`bill__id\` = ${bill__id},
+			\`name\` = ${nameStr},
+			\`amount\` = ${amount},
+			\`delivery_date\` = '${deliveryDate}',
+			\`note\` = ${note},
+			\`updated_date\` = '${cdate}'
+		WHERE
+			\`id\` = ${id};
+	`;
+	sqlArray.push(sqltmp);
+
+	try {
+		const sqlres = await db.trx(sqlArray);
+		if (sqlres) {
+			resTmp = await billService.recalBill(bill__id);
+			res.status(200).json({
+				error: false,
+				type: "success",
+				msg: "success",
+			});
+			return true;
+		} else {
+			res.status(200).json({
+				error: true,
+				type: "error",
+				msg: "error",
+			});
+			return true;
+		}
+	} catch (err) {
+		res.status(200).json({
+			error: true,
+			type: "error",
+			msg: "db transaction try error",
+			dev: sqlArray,
+			dev2: err,
+		});
+		return true;
+	}
+};
+
 const Update = async (req, res, next) => {
 	const cdate = dateTime.cDateTime();
 
@@ -2668,9 +3249,11 @@ module.exports = {
 	Insert,
 	InsertT1,
 	InsertT2,
+	InsertT3,
 	Close,
 	Update,
 	UpdateT1,
 	UpdateT2,
+	UpdateT3,
 	Delete,
 };

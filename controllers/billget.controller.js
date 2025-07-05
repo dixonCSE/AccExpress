@@ -43,6 +43,7 @@ const DataTable = async (queryObj = false) => {
 				\`t1\`.\`status__id\` AS \`status__id\`,
 				\`t1\`.\`datestr\` AS \`datestr\`,
 				\`t1\`.\`dateint\` AS \`dateint\`,
+				\`t1\`.\`delivery_date\` AS \`delivery_date\`,
 				\`t1\`.\`start_date\` AS \`start_date\`,
 				\`t1\`.\`end_date\` AS \`end_date\`,
 				\`t1\`.\`duration\` AS \`duration\`,
@@ -101,6 +102,253 @@ const DataTable = async (queryObj = false) => {
 		data,
 		meta,
 	};
+};
+
+const DTQuery = async (queryObj = false) => {
+	let { filter, search, sort, order, offset, limit } = queryObj;
+
+	filter = filter || false;
+	search = search || false;
+	sort_col = sort || db.sortCol;
+	sort_dir = order || db.sortDir;
+	offset = offset || db.offset;
+	limit = limit || db.limit;
+
+	filterMap = {
+		id: `\`t1\`.\`id\``,
+		bill__id: `\`t1\`.\`bill__id\``,
+		auto_renew: `\`t1\`.\`auto_renew\``,
+	};
+
+	searchStr = "";
+	if (search) {
+		searchStr = `
+			( 
+				\`t1\`.\`amount\` LIKE '%${search}%' 
+				OR 
+				\`t1\`.\`name\` LIKE '%${search}%'
+			) 
+			AND 
+		`;
+	}
+
+	filterStr = "";
+	if (filter) {
+		// filter = JSON.parse(filter);
+		if (Object.keys(filter).length > 0) {
+			filterStr += ` `;
+			i = 0;
+			for (const [key, value] of Object.entries(filter)) {
+				if (i == 0) {
+				} else {
+					filterStr += ` AND `;
+				}
+
+				tmpType = typeof value;
+				if (tmpType == "object" && Array.isArray(value)) {
+					if (Array.isArray(value)) {
+						filterStr += ` \`${key}\` IN ( `;
+						value.forEach((element, index) => {
+							if (index == 0) {
+								filterStr += `'${element}' `;
+							} else {
+								filterStr += `, '${element}' `;
+							}
+						});
+						filterStr += ` ) `;
+					}
+				} else {
+					const con = key.split(" ");
+					if (con[1] == undefined) {
+						filterStr += ` ${filterMap[key]} = '${value}' `;
+					} else {
+						filterStr += ` ${filterMap[con[0]]} ${con[1]} '${value}' `;
+					}
+				}
+				i++;
+			}
+
+			filterStr += ` AND `;
+		}
+	}
+
+	const rows = await db.query(
+		`
+			SELECT 
+				\`t1\`.\`id\` AS \`id\`, 
+				\`t1\`.\`name\` AS \`name\`, 
+				\`t1\`.\`bill__id\` AS \`bill__id\`,
+				\`t1\`.\`amount\` AS \`amount\`,
+				\`t1\`.\`pay_amount\` AS \`pay_amount\`,
+				\`t1\`.\`status__id\` AS \`status__id\`,
+				\`t1\`.\`datestr\` AS \`datestr\`,
+				\`t1\`.\`dateint\` AS \`dateint\`,
+				\`t1\`.\`delivery_date\` AS \`delivery_date\`,
+				\`t1\`.\`start_date\` AS \`start_date\`,
+				\`t1\`.\`end_date\` AS \`end_date\`,
+				\`t1\`.\`duration\` AS \`duration\`,
+				\`t1\`.\`is_fixed\` AS \`is_fixed\`,
+				\`t1\`.\`auto_renew\` AS \`auto_renew\`,
+				\`t1\`.\`is_closed\` AS \`is_closed\`,
+				\`t1\`.\`is_onetime\` AS \`is_onetime\`,
+				\`t1\`.\`renew_date\` AS \`renew_date\`,
+				\`t1\`.\`renew_amount\` AS \`renew_amount\`,
+				\`t1\`.\`remind_date\` AS \`remind_date\`,
+				\`t1\`.\`note\` AS \`note\`,
+				\`t1\`.\`created_date\` AS \`created_date\`,
+
+				\`bill\`.\`name\` AS \`bill__name\`,
+				\`bill\`.\`bill_type__id\` AS \`bill_type__id\`,
+				\`status\`.\`name\` AS \`status__name\`
+			FROM 
+				\`bill_get\` AS \`t1\` 
+				LEFT JOIN \`status\` AS \`status\` ON \`status\`.\`id\` = \`t1\`.\`status__id\`
+				LEFT JOIN \`bill\` AS \`bill\` ON \`bill\`.\`id\` = \`t1\`.\`bill__id\`
+			WHERE
+				${filterStr}
+				${searchStr}
+				\`t1\`.\`is_delete\` = 0
+			ORDER BY ${sort_col} ${sort_dir}
+			LIMIT ${offset}, ${limit}
+		`,
+		[],
+	);
+
+	const count = await db.query(
+		`
+			SELECT 
+				IFNULL(COUNT(\`t1\`.\`id\`), 0) AS \`cnt\`
+			FROM 
+				\`bill_get\` AS \`t1\` 
+			WHERE
+				${filterStr}
+				${searchStr}
+				\`t1\`.\`is_delete\` = 0
+		`,
+		[],
+	);
+
+	const data = helper.emptyOrRows(rows);
+	const meta = {
+		offset: offset,
+		limit: limit,
+		count: count[0].cnt,
+		search: search,
+		sort_col: sort_col,
+		sort_dir: sort_dir,
+	};
+
+	return {
+		data,
+		meta,
+	};
+};
+
+const Table = async (req, res, next) => {
+	/////////////////////////////////////////////// begin validation ///////////////////////////////////////////////
+	if (
+		req.body.filter === undefined ||
+		req.body.filter == "" ||
+		req.body.filter === null
+	) {
+		filter = false;
+	} else {
+		if (
+			typeof req.body.filter === "object" &&
+			Object.keys(req.body.filter).length > 0
+		) {
+			filter = req.body.filter;
+		} else {
+			filter = false;
+		}
+	}
+
+	if (
+		req.body.search === undefined ||
+		req.body.search == "" ||
+		req.body.search === null
+	) {
+		search = false;
+	} else {
+		search = req.body.search.trim().toString();
+	}
+
+	if (
+		req.body.sort === undefined ||
+		req.body.sort == "" ||
+		req.body.sort === null
+	) {
+		sort = false;
+	} else {
+		sort = req.body.sort.trim().toString();
+	}
+
+	if (
+		req.body.order === undefined ||
+		req.body.order == "" ||
+		req.body.order === null
+	) {
+		order = false;
+	} else {
+		order = req.body.order.trim().toString();
+	}
+
+	if (
+		req.body.offset === undefined ||
+		req.body.offset == "" ||
+		req.body.offset === null
+	) {
+		offset = false;
+	} else {
+		offset = parseInt(req.body.offset);
+	}
+
+	if (offset === undefined || isNaN(offset)) {
+		offset = false;
+	}
+
+	if (
+		req.body.limit === undefined ||
+		req.body.limit == "" ||
+		req.body.limit === null
+	) {
+		limit = false;
+	} else {
+		limit = parseInt(req.body.limit);
+	}
+
+	if (limit === undefined || isNaN(limit) || limit < 1) {
+		limit = false;
+	}
+
+	try {
+		QryObj = {
+			filter: filter,
+			search: search,
+			sort: sort,
+			order: order,
+			offset: offset,
+			limit: limit,
+		};
+		const sqlRes = await DTQuery(QryObj);
+
+		res.status(200).json({
+			error: false,
+			type: "success",
+			msg: "Access granted2",
+			data: sqlRes.data,
+			count: sqlRes.meta.count,
+		});
+		return true;
+	} catch (err) {
+		res.status(200).json({
+			error: true,
+			type: "error",
+			msg: "SQL QUERY Error",
+			msgDev: err,
+		});
+		return true;
+	}
 };
 
 const List = async (req, res, next) => {
@@ -3243,6 +3491,7 @@ const Delete = async (req, res, next) => {
 
 module.exports = {
 	List,
+	Table,
 	Get,
 	Gets,
 	View,

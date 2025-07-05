@@ -206,11 +206,13 @@ router.delete("/bill-type/delete/:id", billTypeController.Delete);
 
 router.get("/bill/list", billController.List);
 router.get("/bill/gets", billController.Gets);
-router.get("/bill/:id", billController.Get);
+router.get("/bill/:id", billController.View);
+//router.get("/bill/:id", billController.Get);
 router.post("/bill/insert", billController.Insert);
 router.post("/bill/update", billController.Update);
 router.delete("/bill/delete/:id", billController.Delete);
 
+router.post("/bill-get/table", billGetController.Table);
 router.get("/bill-get/list", billGetController.List);
 router.get("/bill-get/gets", billGetController.Gets);
 router.get("/bill-get/:id", billGetController.Get);
@@ -225,6 +227,7 @@ router.post("/bill-get/update_t3", billGetController.UpdateT3);
 router.delete("/bill-get/delete/:id", billGetController.Delete);
 router.get("/bill-get/close/:id", billGetController.Close);
 
+router.post("/payment-send/table", paymentSendController.Table);
 router.get("/payment-send/list", paymentSendController.List);
 router.get("/payment-send/:id", paymentSendController.Get);
 router.post("/payment-send/insert", paymentSendController.Insert);

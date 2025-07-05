@@ -706,8 +706,108 @@ const pRenewBill = async () => {
 	}
 };
 
+const EndBoostSms = async (req, res, next) => {
+	const cdate = dateTime.cDateTime();
+	const now = new Date();
+	const sdate = datexTime.format(now, "YYYY-MM-DD HH:mm:ss");
+	const eDate = datexTime.format(
+		datexTime.addDays(new Date(sdate), -2),
+		"YYYY-MM-DD HH:mm:ss",
+	);
+	sqlTmpArray = [];
+	try {
+		const list = await db.query(
+			`
+				SELECT 
+					\`t1\`.\`id\` AS \`id\`, 
+					\`t1\`.\`end_date\` AS \`end_date\`, 
+					\`user\`.\`first_name\` AS \`first_name\`,
+					\`user\`.\`phone\` AS \`phone\`,
+					\`service\`.\`name\` AS \`service__name\`
+				FROM 
+					\`user_date_service\` AS \`t1\`
+					LEFT JOIN \`user_service\` AS \`user_service\` ON \`user_service\`.\`id\` = \`t1\`.\`user_service__id\`
+					LEFT JOIN \`service\` AS \`service\` ON \`service\`.\`id\` = \`user_service\`.\`service__id\`
+					LEFT JOIN \`user\` AS \`user\` ON \`user\`.\`id\` = \`user_service\`.\`user__id\`
+				WHERE
+					\`t1\`.\`end_date\` <= '${sdate}'
+					AND 
+					\`t1\`.\`is_endsmssend\` = 0
+					AND 
+					\`t1\`.\`is_delete\` = 0
+				LIMIT 0,99
+			`,
+			[],
+		);
+
+		if (list.length > 0) {
+			list.forEach(async (item, index) => {
+				let sqlArray = [];
+				let sqltmp;
+
+				let to = item.phone;
+				// let to = "01711156085";
+				let endDate2 = datexTime.format(
+					new Date(item.end_date),
+					"D MMM, YYYY hh:mm A",
+				);
+
+				sqltmp = `
+					UPDATE 
+						\`user_date_service\` 
+					SET 
+						\`is_endsmssend\` = 1
+					WHERE 
+						\`id\` = ${item.id}
+					;
+				`;
+				sqlArray.push(sqltmp);
+
+				/* 
+				msg = `
+					Your ${service__name} is successfully completed.\n
+					at ${endDate2}.\n
+					Stay tuned for the next update.\n
+					Need help? Call: 01873200200
+				`; 
+				*/
+
+				let sqlres = await db.trx(sqlArray);
+				sqlArray = [];
+
+				let msg = `Your ${item.service__name} is successfully completed.\nat ${endDate2}.\nStay tuned for the next update.\nNeed help? Call: 01873200200`;
+				let smsRes = await sms.sendSms(to, msg);
+			});
+
+			res.status(200).json({
+				error: false,
+				type: "success",
+				msg: "success",
+			});
+			return true;
+		} else {
+			res.status(200).json({
+				error: false,
+				type: "success",
+				msg: "no data found",
+			});
+			return true;
+		}
+	} catch (err) {
+		console.log(err);
+		res.status(200).json({
+			error: true,
+			type: "error",
+			msg: "SQL QUERY Error",
+			msgDev: err,
+		});
+		return true;
+	}
+};
+
 module.exports = {
 	RemindSms,
 	Renew,
 	RenewBill,
+	EndBoostSms,
 };

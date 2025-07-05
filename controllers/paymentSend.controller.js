@@ -6,6 +6,240 @@ const dateTime = require("../utils/cdate.util.js");
 const nf = require("../utils/numberFormat.util.js");
 const billService = require("../services/bill.service.js");
 
+const DTQuery = async (queryObj = false) => {
+	let { filter, search, sort, order, offset, limit } = queryObj;
+
+	filter = filter || false;
+	search = search || false;
+	sort_col = sort || db.sortCol;
+	sort_dir = order || db.sortDir;
+	offset = offset || db.offset;
+	limit = limit || db.limit;
+
+	filterMap = {
+		id: `\`t1\`.\`id\``,
+		vendor__id: `\`t1\`.\`vendor__id\``,
+		bank__id: `\`t1\`.\`bank__id\``,
+	};
+
+	searchStr = "";
+	if (search) {
+		searchStr = `
+			( 
+				\`t1\`.\`id\` LIKE '%${search}%' 
+				OR 
+				\`t1\`.\`amount\` LIKE '%${search}%'
+				OR 
+				\`t1\`.\`vendor__name\` LIKE '%${search}%'
+				OR 
+				\`t1\`.\`bank__name\` LIKE '%${search}%'
+			) 
+			AND  
+		`;
+	}
+
+	filterStr = "";
+	if (filter) {
+		if (Object.keys(filter).length > 0) {
+			filterStr += ` `;
+			i = 0;
+			for (const [key, value] of Object.entries(filter)) {
+				if (i == 0) {
+				} else {
+					filterStr += ` AND `;
+				}
+
+				tmpType = typeof value;
+				if (tmpType == "object" && Array.isArray(value)) {
+					if (Array.isArray(value)) {
+						filterStr += ` \`${key}\` IN ( `;
+						value.forEach((element, index) => {
+							if (index == 0) {
+								filterStr += `'${element}' `;
+							} else {
+								filterStr += `, '${element}' `;
+							}
+						});
+						filterStr += ` ) `;
+					}
+				} else {
+					const con = key.split(" ");
+					if (con[1] == undefined) {
+						filterStr += ` ${filterMap[key]} = '${value}' `;
+					} else {
+						filterStr += ` ${filterMap[con[0]]} ${con[1]} '${value}' `;
+					}
+				}
+				i++;
+			}
+
+			filterStr += ` AND `;
+		}
+	}
+
+	const rows = await db.query(
+		`
+			SELECT 
+				\`t1\`.\`id\` AS \`id\`, 
+				\`t1\`.\`created_date\` AS \`created_date\`,
+				\`t1\`.\`vendor__id\` AS \`vendor__id\`,
+				\`t1\`.\`bank__id\` AS \`bank__id\`,
+				\`t1\`.\`amount\` AS \`amount\`,
+				\`t1\`.\`note\` AS \`note\`,
+				\`t1\`.\`trxid\` AS \`trxid\`,
+				\`vendor\`.\`name\` AS \`vendor__name\`,
+				\`bank\`.\`name\` AS \`bank__name\`
+			FROM 
+				\`payment_send\` AS \`t1\` 
+				LEFT JOIN \`bill\` AS \`vendor\` ON \`vendor\`.\`id\` = \`t1\`.\`vendor__id\`
+				LEFT JOIN \`bank\` AS \`bank\` ON \`bank\`.\`id\` = \`t1\`.\`bank__id\`
+			WHERE
+				${filterStr}
+				${searchStr}
+				\`t1\`.\`is_delete\` = 0
+			ORDER BY ${sort_col} ${sort_dir}
+			LIMIT ${offset}, ${limit}
+		`,
+		[],
+	);
+
+	const count = await db.query(
+		`
+			SELECT 
+				IFNULL(COUNT(\`t1\`.\`id\`), 0) AS \`cnt\`
+			FROM 
+				\`payment_send\` AS \`t1\` 
+			WHERE
+				${filterStr}
+				${searchStr}
+				\`t1\`.\`is_delete\` = 0
+		`,
+		[],
+	);
+
+	const data = helper.emptyOrRows(rows);
+	const meta = {
+		offset: offset,
+		limit: limit,
+		count: count[0].cnt,
+		search: search,
+		sort_col: sort_col,
+		sort_dir: sort_dir,
+	};
+
+	return {
+		data,
+		meta,
+	};
+};
+
+const Table = async (req, res, next) => {
+	/////////////////////////////////////////////// begin validation ///////////////////////////////////////////////
+	if (
+		req.body.filter === undefined ||
+		req.body.filter == "" ||
+		req.body.filter === null
+	) {
+		filter = false;
+	} else {
+		if (
+			typeof req.body.filter === "object" &&
+			Object.keys(req.body.filter).length > 0
+		) {
+			filter = req.body.filter;
+		} else {
+			filter = false;
+		}
+	}
+
+	if (
+		req.body.search === undefined ||
+		req.body.search == "" ||
+		req.body.search === null
+	) {
+		search = false;
+	} else {
+		search = req.body.search.trim().toString();
+	}
+
+	if (
+		req.body.sort === undefined ||
+		req.body.sort == "" ||
+		req.body.sort === null
+	) {
+		sort = false;
+	} else {
+		sort = req.body.sort.trim().toString();
+	}
+
+	if (
+		req.body.order === undefined ||
+		req.body.order == "" ||
+		req.body.order === null
+	) {
+		order = false;
+	} else {
+		order = req.body.order.trim().toString();
+	}
+
+	if (
+		req.body.offset === undefined ||
+		req.body.offset == "" ||
+		req.body.offset === null
+	) {
+		offset = false;
+	} else {
+		offset = parseInt(req.body.offset);
+	}
+
+	if (offset === undefined || isNaN(offset)) {
+		offset = false;
+	}
+
+	if (
+		req.body.limit === undefined ||
+		req.body.limit == "" ||
+		req.body.limit === null
+	) {
+		limit = false;
+	} else {
+		limit = parseInt(req.body.limit);
+	}
+
+	if (limit === undefined || isNaN(limit) || limit < 1) {
+		limit = false;
+	}
+
+	try {
+		QryObj = {
+			filter: filter,
+			search: search,
+			sort: sort,
+			order: order,
+			offset: offset,
+			limit: limit,
+		};
+		const sqlRes = await DTQuery(QryObj);
+
+		res.status(200).json({
+			error: false,
+			type: "success",
+			msg: "Access granted",
+			data: sqlRes.data,
+			count: sqlRes.meta.count,
+		});
+		return true;
+	} catch (err) {
+		res.status(200).json({
+			error: true,
+			type: "error",
+			msg: "SQL QUERY Error",
+			msgDev: err,
+		});
+		return true;
+	}
+};
+
 const DataTable = async (queryObj = false) => {
 	let { filter, search, sort, order, offset, limit } = queryObj;
 
@@ -759,6 +993,7 @@ const Delete = async (req, res, next) => {
 
 module.exports = {
 	List,
+	Table,
 	Get,
 	Gets,
 	View,

@@ -2557,6 +2557,17 @@ const userBoostServiceInsert = async (req, res, next) => {
 	sqltmp = "SET @liid = LAST_INSERT_ID();";
 	sqlArray.push(sqltmp);
 
+	let date1 = new Date(endDate);
+	let date2 = new Date();
+	is_endsmssend = 1;
+	if (date1 < date2) {
+		is_endsmssend = 1;
+	} else if (date1 > date2) {
+		is_endsmssend = 0;
+	} else {
+		is_endsmssend = 1;
+	}
+
 	sqltmp = `
 		INSERT INTO user_date_service (
 			user_service__id,
@@ -2568,6 +2579,7 @@ const userBoostServiceInsert = async (req, res, next) => {
 
 			start_date,
 			end_date,
+			is_endsmssend,
 
 			created_date,
 			updated_date
@@ -2581,6 +2593,7 @@ const userBoostServiceInsert = async (req, res, next) => {
 
 				'${startDate}',
 				'${endDate}',
+				${is_endsmssend},
 
 				'${cdate}',
 				'${cdate}'

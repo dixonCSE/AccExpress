@@ -9,7 +9,7 @@ searchCol = false;
 sortCol = "id";
 sortDir = "desc";
 offset = 0;
-limit = 10;
+limit = 50;
 
 const query = async (sql, params) => {
 	// console.log(sql);
@@ -579,4 +579,12 @@ module.exports = {
 	insertRow,
 	updateRow,
 	deleteRow,
+
+	filter,
+	searchKey,
+	searchCol,
+	sortCol,
+	sortDir,
+	offset,
+	limit,
 };

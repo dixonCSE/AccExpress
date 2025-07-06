@@ -632,10 +632,10 @@ const pRenewBill = async () => {
 				\`updated_date\`
 			)
 			SELECT 
-				\`t1\`.\`bill__id\` AS \`bill_id\`,
+				\`t1\`.\`bill__id\` AS \`bill__id\`,
 				\`t1\`.\`name\` AS \`bill_name\`,
 				\`t1\`.\`renew_amount\` AS \`amount\`,
-				\`t1\`.\`status__id\` AS \`status_id\`,
+				\`t1\`.\`status__id\` AS \`status__id\`,
 
 				\`t1\`.\`renew_date\` AS \`start_date\`,
 				DATE_SUB(DATE_ADD(\`t1\`.\`renew_date\`, INTERVAL \`t1\`.\`duration\` DAY), INTERVAL 1 SECOND) AS \`end_date\`,
@@ -702,6 +702,137 @@ const pRenewBill = async () => {
 		}
 	} catch (err) {
 		console.log(err);
+		return true;
+	}
+};
+
+const RenewBillMonthly = async (req, res, next) => {
+	const cdate = dateTime.cDateTime();
+	try {
+		let sqlArray = []; //
+		let sqltmp = null; //
+
+		sqltmp = `
+			INSERT INTO \`bill_get\`(
+
+				\`bill__id\`,
+				\`name\`,
+				\`amount\`,
+
+				\`datestr\`,
+				\`dateint\`,
+				
+				\`status__id\`,
+				\`is_fixed\`,
+				\`is_closed\`,
+				\`is_onetime\`,
+				\`set_amount\`,
+
+				\`start_date\`,
+				\`end_date\`,
+
+				\`renew_date\`,
+				\`auto_renew\`,
+				\`renew_amount\`,
+				\`remind_date\`,
+
+				\`created_date\`,
+
+				\`parent__id\`
+			)
+			SELECT 
+				\`t1\`.\`bill__id\` AS \`bill_id\`,
+				\`t1\`.\`name\` AS \`bill_name\`,
+				\`t1\`.\`renew_amount\` AS \`amount\`,
+
+				DATE_FORMAT(\`t1\`.\`renew_date\`, '%Y - %M') AS \`datestr\`,
+				DATE_FORMAT(\`t1\`.\`renew_date\`, '%Y%m') AS \`dateint\`,
+
+				\`t1\`.\`status__id\` AS \`status__id\`,
+				\`t1\`.\`is_fixed\` AS \`is_fixed\`,
+				\`t1\`.\`is_closed\` AS \`is_closed\`,
+				\`t1\`.\`is_onetime\` AS \`is_onetime\`,
+				\`t1\`.\`set_amount\` AS \`set_amount\`,
+
+				\`t1\`.\`renew_date\` AS \`start_date\`,
+				DATE_SUB(DATE_ADD(\`t1\`.\`renew_date\`, INTERVAL 1 MONTH), INTERVAL 1 SECOND) AS \`end_date\`,
+				
+				DATE_ADD(\`t1\`.\`renew_date\`, INTERVAL 1 MONTH) AS \`renew_date\`,
+				1 AS \`auto_renew\`,
+				\`t1\`.\`renew_amount\` AS \`renew_amount\`,
+				DATE_SUB(DATE_ADD(\`t1\`.\`renew_date\`, INTERVAL 1 MONTH), INTERVAL 2 DAY) AS \`remind_date\`,
+
+				'${cdate}' AS \`created_date\`,
+				\`t1\`.\`id\` AS \`parent__id\`
+			FROM 
+				\`bill_get\` AS \`t1\`
+				LEFT JOIN
+				\`bill\` AS \`bill\` ON \`bill\`.\`id\` = \`t1\`.\`bill__id\`
+			WHERE 
+				\`t1\`.\`auto_renew\` = 1
+				AND 
+				\`t1\`.\`is_closed\` = 0
+				AND 
+				\`t1\`.\`renew_date\` <= '${cdate}'
+				AND 
+				\`bill\`.\`bill_type__id\` = 1
+			;
+		`;
+		sqlArray.push(sqltmp);
+
+		sqltmp = `
+			UPDATE 
+				\`bill_get\` 
+			SET 
+				\`auto_renew\` = 0,
+				\`is_closed\` = 1
+			WHERE 
+				\`id\` IN (
+					SELECT 
+						\`t1\`.\`id\` AS \`id\`
+					FROM 
+						\`bill_get\` AS \`t1\`
+						LEFT JOIN
+						\`bill\` AS \`bill\` ON \`bill\`.\`id\` = \`t1\`.\`bill__id\`
+					WHERE 
+						\`t1\`.\`auto_renew\` = 1
+						AND 
+						\`t1\`.\`is_closed\` = 0
+						AND 
+						\`t1\`.\`renew_date\` <= '${cdate}'
+						AND 
+						\`bill\`.\`bill_type__id\` = 1
+				)
+			;
+		`;
+		sqlArray.push(sqltmp);
+
+		let sqlres = await db.trx(sqlArray);
+
+		if (sqlres) {
+			res.status(200).json({
+				error: false,
+				type: "success",
+				msg: "success",
+			});
+			return true;
+		} else {
+			res.status(200).json({
+				error: false,
+				type: "error",
+				msg: "sql error",
+			});
+			return true;
+		}
+	} catch (err) {
+		// console.log(err);
+		console.log(sqlArray);
+		res.status(200).json({
+			error: true,
+			type: "error",
+			msg: "Try 2 Error",
+			msgDev: err,
+		});
 		return true;
 	}
 };
@@ -810,4 +941,5 @@ module.exports = {
 	Renew,
 	RenewBill,
 	EndBoostSms,
+	RenewBillMonthly,
 };

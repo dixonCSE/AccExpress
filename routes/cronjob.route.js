@@ -7,6 +7,7 @@ const cronjobController = require("../controllers/cronjob.controller");
 router.get("/remind", cronjobController.RemindSms);
 router.get("/renew", cronjobController.Renew);
 router.get("/renew_bill", cronjobController.RenewBill);
+router.get("/renew_monthly_bill", cronjobController.RenewBillMonthly);
 router.get("/end_boost_sms", cronjobController.EndBoostSms);
 
 module.exports = router;

@@ -677,6 +677,42 @@ const serviceInsert = async (req, res, next) => {
 	}
 
 	if (validation) {
+		if (req.body.buyPrice == undefined || req.body.buyPrice == "") {
+			validation = false;
+			validationMsg = "Service Buy price required";
+			validationData.push({
+				field: "buyPrice",
+				msg: validationMsg,
+			});
+		} else {
+			buyPrice = req.body.buyPrice;
+		}
+	}
+
+	if (validation) {
+		buyPrice = parseFloat(buyPrice);
+		if (buyPrice == undefined || isNaN(buyPrice)) {
+			validation = false;
+			validationMsg = "Service Buy price is not valid";
+			validationData.push({
+				field: "buyPrice",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		if (buyPrice < 0) {
+			validation = false;
+			validationMsg = "Service Buy price < 1";
+			validationData.push({
+				field: "buyPrice",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
 		if (req.body.des == undefined || req.body.des == "") {
 			// validation = false;
 			// validationMsg = "Service description required";
@@ -765,6 +801,7 @@ const serviceInsert = async (req, res, next) => {
 			name,
 			des,
 			price,
+			buy_price,
 			image,
 			is_install,
 			service_type__id,
@@ -774,6 +811,7 @@ const serviceInsert = async (req, res, next) => {
 				'${name}',
 				${des},
 				${price},
+				${buyPrice},
 				'${filePath}',
 				0,
 				${serviceTypeId},
@@ -946,6 +984,42 @@ const serviceUpdate = async (req, res, next) => {
 	}
 
 	if (validation) {
+		if (req.body.buyPrice == undefined || req.body.buyPrice == "") {
+			validation = false;
+			validationMsg = "Service Buy price required";
+			validationData.push({
+				field: "buyPrice",
+				msg: validationMsg,
+			});
+		} else {
+			buyPrice = req.body.buyPrice;
+		}
+	}
+
+	if (validation) {
+		buyPrice = parseFloat(buyPrice);
+		if (buyPrice == undefined || isNaN(buyPrice)) {
+			validation = false;
+			validationMsg = "Service Buy price is not valid";
+			validationData.push({
+				field: "buyPrice",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		if (buyPrice < 0) {
+			validation = false;
+			validationMsg = "Service Buy price < 1";
+			validationData.push({
+				field: "buyPrice",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
 		if (req.body.des == undefined || req.body.des == "") {
 			// validation = false;
 			// validationMsg = "Service description required";
@@ -985,12 +1059,13 @@ const serviceUpdate = async (req, res, next) => {
 	let sqltmp;
 
 	sqltmp = `
-		Update 
+		UPDATE 
 			service 
 		SET 
 			name = '${name}',
 			image = '${filePath}',
 			price = ${price},
+			buy_price = ${buyPrice},
 			des = ${des},
 			updated_date = '${cdate}'
 		WHERE 

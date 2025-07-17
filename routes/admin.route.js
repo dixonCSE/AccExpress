@@ -82,6 +82,7 @@ router.get("/profile", profileController.get);
 router.post("/balance", balanceController.balance);
 router.get("/dashboard", adminController.dashboard);
 
+router.get("/user/gets", userController.Gets);
 router.get("/user/list", userController.userList);
 router.get("/user/detail/:id", userController.userDetail);
 router.get("/user/:id", userController.userGet);
@@ -124,6 +125,10 @@ router.post(
 	serviceController.userBoostServiceInsert,
 );
 router.post("/user-service/update", serviceController.userServiceUpdate);
+router.post(
+	"/user-service/boost-update",
+	serviceController.userBoostServiceUpdate,
+);
 router.delete("/user-service/delete/:id", serviceController.userServiceDelete);
 
 router.post(
@@ -206,8 +211,8 @@ router.delete("/bill-type/delete/:id", billTypeController.Delete);
 
 router.get("/bill/list", billController.List);
 router.get("/bill/gets", billController.Gets);
-router.get("/bill/:id", billController.View);
-//router.get("/bill/:id", billController.Get);
+router.get("/bill/view/:id", billController.View);
+router.get("/bill/:id", billController.Get);
 router.post("/bill/insert", billController.Insert);
 router.post("/bill/update", billController.Update);
 router.delete("/bill/delete/:id", billController.Delete);

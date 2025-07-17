@@ -186,6 +186,43 @@ const userGet = async (req, res, next) => {
 	}
 };
 
+const Gets = async (req, res, next) => {
+	try {
+		const sqlRes = await db.getRows({
+			table: "user",
+			filter: {
+				user_role__id: 10,
+				is_delete: 0,
+			},
+		});
+
+		if (sqlRes == false) {
+			res.status(404).json({
+				error: true,
+				type: "error",
+				msg: "error",
+			});
+			return true;
+		}
+
+		res.status(200).json({
+			error: false,
+			type: "success",
+			msg: "Access granted",
+			data: sqlRes,
+		});
+		return true;
+	} catch (err) {
+		// next(err);
+		res.status(500).json({
+			error: true,
+			type: "error",
+			msg: "error",
+		});
+		return true;
+	}
+};
+
 const userDetail = async (req, res, next) => {
 	try {
 		const user = await db.getRow({
@@ -1241,6 +1278,7 @@ const userDelete = async (req, res, next) => {
 module.exports = {
 	userList,
 	userGet,
+	Gets,
 	userDetail,
 	userUpdate,
 	userInsert,

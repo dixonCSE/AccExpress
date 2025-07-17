@@ -1336,37 +1336,6 @@ const UpdateT1 = async (req, res, next) => {
 
 	if (validation) {
 		if (
-			req.body.renewAmount === undefined ||
-			req.body.renewAmount == "" ||
-			req.body.renewAmount === null
-		) {
-			validation = false;
-			validationMsg = "Amount required";
-			validationData.push({
-				field: "renewAmount",
-				msg: validationMsg,
-			});
-		} else {
-			renewAmount = req.body.renewAmount;
-		}
-	}
-
-	if (validation) {
-		renewAmount = parseFloat(renewAmount);
-		if (renewAmount === undefined || isNaN(renewAmount) || renewAmount < 0) {
-			validation = false;
-			validationMsg = "Amount is not valid";
-			validationData.push({
-				field: "renewAmount",
-				msg: validationMsg,
-			});
-		} else {
-			renewAmount = nf.dec(renewAmount);
-		}
-	}
-
-	if (validation) {
-		if (
 			req.body.note === undefined ||
 			req.body.note == "" ||
 			req.body.note === null
@@ -1433,9 +1402,41 @@ const UpdateT1 = async (req, res, next) => {
 		) {
 			auto_renew = false;
 			autoRenew = 0;
+			renewAmount = 0;
 		} else {
 			auto_renew = !!req.body.auto_renew;
 			autoRenew = auto_renew ? 1 : 0;
+		}
+	}
+
+	if (validation && auto_renew) {
+		if (
+			req.body.renewAmount === undefined ||
+			req.body.renewAmount == "" ||
+			req.body.renewAmount === null
+		) {
+			validation = false;
+			validationMsg = "Renew amount required";
+			validationData.push({
+				field: "renewAmount",
+				msg: validationMsg,
+			});
+		} else {
+			renewAmount = req.body.renewAmount;
+		}
+	}
+
+	if (validation && auto_renew) {
+		renewAmount = parseFloat(renewAmount);
+		if (renewAmount === undefined || isNaN(renewAmount) || renewAmount < 0) {
+			validation = false;
+			validationMsg = "Renew amount is not valid";
+			validationData.push({
+				field: "renewAmount",
+				msg: validationMsg,
+			});
+		} else {
+			renewAmount = nf.dec(renewAmount);
 		}
 	}
 
@@ -2144,37 +2145,6 @@ const UpdateT2 = async (req, res, next) => {
 
 	if (validation) {
 		if (
-			req.body.renewAmount === undefined ||
-			req.body.renewAmount == "" ||
-			req.body.renewAmount === null
-		) {
-			validation = false;
-			validationMsg = "Amount required";
-			validationData.push({
-				field: "renewAmount",
-				msg: validationMsg,
-			});
-		} else {
-			renewAmount = req.body.renewAmount;
-		}
-	}
-
-	if (validation) {
-		renewAmount = parseFloat(renewAmount);
-		if (renewAmount === undefined || isNaN(renewAmount) || renewAmount < 0) {
-			validation = false;
-			validationMsg = "Amount is not valid";
-			validationData.push({
-				field: "renewAmount",
-				msg: validationMsg,
-			});
-		} else {
-			renewAmount = nf.dec(renewAmount);
-		}
-	}
-
-	if (validation) {
-		if (
 			req.body.startDate === undefined ||
 			req.body.startDate == "" ||
 			req.body.startDate === null
@@ -2255,9 +2225,41 @@ const UpdateT2 = async (req, res, next) => {
 		) {
 			auto_renew = false;
 			autoRenew = 0;
+			renewAmount = 0;
 		} else {
 			auto_renew = !!req.body.auto_renew;
 			autoRenew = auto_renew ? 1 : 0;
+		}
+	}
+
+	if (validation && auto_renew) {
+		if (
+			req.body.renewAmount === undefined ||
+			req.body.renewAmount == "" ||
+			req.body.renewAmount === null
+		) {
+			validation = false;
+			validationMsg = "Renew amount required";
+			validationData.push({
+				field: "renewAmount",
+				msg: validationMsg,
+			});
+		} else {
+			renewAmount = req.body.renewAmount;
+		}
+	}
+
+	if (validation && auto_renew) {
+		renewAmount = parseFloat(renewAmount);
+		if (renewAmount === undefined || isNaN(renewAmount) || renewAmount < 0) {
+			validation = false;
+			validationMsg = "Renew amount is not valid";
+			validationData.push({
+				field: "renewAmount",
+				msg: validationMsg,
+			});
+		} else {
+			renewAmount = nf.dec(renewAmount);
 		}
 	}
 

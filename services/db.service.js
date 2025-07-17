@@ -126,12 +126,12 @@ const getRows = async (config) => {
 	let tmpType;
 	fType = typeof config.filter;
 
-	filter = config.filter || filter;
-	searchKey = config.searchKey || searchKey;
-	searchCol = config.searchCol || searchCol;
-	sortCol = config.sortCol || sortCol;
-	sortDir = config.sortDir || sortDir;
-	offset = config.offset || offset;
+	filter = config.filter || false;
+	searchKey = config.searchKey || false;
+	searchCol = config.searchCol || false;
+	sortCol = config.sortCol || "id";
+	sortDir = config.sortDir || "desc";
+	offset = config.offset || 0;
 	limit = config.limit || 99999;
 
 	sqlStr += `SELECT * FROM \`${config.table}\` `;

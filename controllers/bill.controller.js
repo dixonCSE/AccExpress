@@ -539,6 +539,30 @@ const Insert = async (req, res, next) => {
 
 	if (validation) {
 		if (
+			req.body.email === undefined ||
+			req.body.email == "" ||
+			req.body.email === null
+		) {
+			email = `null`;
+		} else {
+			email = `'${req.body.email.trim().toString()}'`;
+		}
+	}
+
+	if (validation) {
+		if (
+			req.body.address === undefined ||
+			req.body.address == "" ||
+			req.body.address === null
+		) {
+			address = `null`;
+		} else {
+			address = `'${req.body.address.trim().toString()}'`;
+		}
+	}
+
+	if (validation) {
+		if (
 			req.body.duration === undefined ||
 			req.body.duration == "" ||
 			req.body.duration === null
@@ -607,6 +631,8 @@ const Insert = async (req, res, next) => {
 			\`name\`,
 			\`bill_type__id\`,
 			\`phone\`,
+			\`email\`,
+			\`address\`,
 			\`duration\`,
 			\`des\`,
 			\`is_fixed\`,
@@ -618,6 +644,8 @@ const Insert = async (req, res, next) => {
 			'${str_name}',
 			${bill_type__id},
 			'${phone}',
+			${email},
+			${address},
 			${duration},
 			${des},
 			${isFixed},
@@ -794,6 +822,30 @@ const Update = async (req, res, next) => {
 
 	if (validation) {
 		if (
+			req.body.email === undefined ||
+			req.body.email == "" ||
+			req.body.email === null
+		) {
+			email = `null`;
+		} else {
+			email = `'${req.body.email.trim().toString()}'`;
+		}
+	}
+
+	if (validation) {
+		if (
+			req.body.address === undefined ||
+			req.body.address == "" ||
+			req.body.address === null
+		) {
+			address = `null`;
+		} else {
+			address = `'${req.body.address.trim().toString()}'`;
+		}
+	}
+
+	if (validation) {
+		if (
 			req.body.duration === undefined ||
 			req.body.duration == "" ||
 			req.body.duration === null
@@ -833,6 +885,16 @@ const Update = async (req, res, next) => {
 		}
 	}
 
+	if (validation) {
+		if (req.body.is_fixed === undefined || req.body.is_fixed == "") {
+			is_fixed = false;
+			isFixed = 0;
+		} else {
+			is_fixed = !!req.body.is_fixed;
+			isFixed = is_fixed ? 1 : 0;
+		}
+	}
+
 	if (validation == false) {
 		res.status(200).json({
 			error: true,
@@ -855,8 +917,11 @@ const Update = async (req, res, next) => {
 			\`bill_type__id\` = ${bill_type__id},
 			\`phone\` = '${phone}',
 			\`duration\` = ${duration},
+			\`email\` = ${email},
+			\`address\` = ${address},
 			\`des\` = ${des},
-			\`updated_date\` = '${cdate}'
+			\`updated_date\` = '${cdate}',
+			\`is_fixed\` = ${isFixed}
 		WHERE 
 			\`id\` = ${id};
 	`;

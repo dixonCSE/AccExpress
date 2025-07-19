@@ -11,6 +11,8 @@ const dueService = require("../services/due.service.js");
 const sms = require("../services/sms.service.js");
 const advSrv = require("../services/adv.service.js");
 const db = require("../services/db.service.js");
+const { default: el } = require("date-and-time/locale/el");
+const { user } = require("../config/db.config.js");
 
 const DTQuery = async (queryObj = false) => {
 	let { filter, search, sort, order, offset, limit } = queryObj;
@@ -4161,6 +4163,272 @@ const userBoostServiceUpdate = async (req, res, next) => {
 	}
 };
 
+const boostClose = async (req, res, next) => {
+	const cdate = dateTime.cDateTime();
+	/////////////////////////////////////////////// begin validation ///////////////////////////////////////////////
+	validation = true;
+	validationData = [];
+	validationMsg = false;
+
+	if (validation) {
+		if (req.params.id == undefined || req.params.id == "") {
+			validation = false;
+			validationMsg = "User Service ID required";
+			validationData.push({
+				field: "id",
+				msg: validationMsg,
+			});
+		} else {
+			id = req.params.id;
+		}
+	}
+
+	if (validation) {
+		id = parseInt(id);
+		if (id == undefined || isNaN(id) || id < 1) {
+			validation = false;
+			validationMsg = "User Service ID is not valid";
+			validationData.push({
+				field: "id",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		user_service = await db.getRow({
+			table: "user_service",
+			filter: id,
+		});
+
+		if (user_service == false) {
+			validation = false;
+			validationMsg = "User Service ID is not found";
+			validationData.push({
+				field: "id",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		if (req.params.amt == undefined || req.params.amt == "") {
+			validation = false;
+			validationMsg = "Use amount required";
+			validationData.push({
+				field: "amt",
+				msg: validationMsg,
+			});
+		} else {
+			amt = nf.dec(req.params.amt);
+		}
+	}
+
+	if (validation) {
+		if (amt == undefined || isNaN(amt) || amt < 0.1) {
+			validation = false;
+			validationMsg = "Use amount is not valid";
+			validationData.push({
+				field: "amt",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
+		if (req.params.issms == undefined || req.params.issms == "") {
+			validation = false;
+			validationMsg = "Is Sms required";
+			validationData.push({
+				field: "issms",
+				msg: validationMsg,
+			});
+		} else {
+			issms = req.params.issms;
+		}
+	}
+
+	if (validation) {
+		issms = parseInt(issms);
+		if (id == undefined || isNaN(issms)) {
+			validation = false;
+			validationMsg = "Is Sms is not valid";
+			validationData.push({
+				field: "issms",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation == false) {
+		res.status(200).json({
+			error: true,
+			type: "error",
+			msg: validationMsg ? validationMsg : "data validation error",
+			validation: validationData,
+		});
+		return false;
+	}
+	//////////////////////////////////////////////// end validation ////////////////////////////////////////////////
+
+	let sqlArray = [];
+	let sqltmp;
+
+	try {
+		/* user = await db.getRow({
+			table: "user",
+			filter: user_service.user__id,
+		});
+		service = await db.getRow({
+			table: "service",
+			filter: user_service.service__id,
+		}); */
+
+		const user_date_service = await db.query(
+			`
+				SELECT 
+					*
+				FROM 
+					\`user_date_service\`
+				WHERE 
+					\`user_date_service\`.\`user_service__id\` = ${id}
+				LIMIT 0, 1
+			`,
+			[],
+		);
+
+		if (user_date_service.length > 0) {
+			price = user_date_service[0].currency_sale_price;
+
+			currency_amount = amt;
+			currency_sale_price = nf.dec(currency_amount * price);
+			ramt = nf.dec(user_date_service[0].currency_amount - currency_amount);
+
+			log1 = JSON.stringify(user_date_service[0]);
+
+			sqltmp = `
+				UPDATE 
+					\`user_date_service\` 
+				SET 
+					\`currency_amount\` = ${currency_amount},
+					\`currency_sale_price\` = ${currency_sale_price},
+					\`end_date\` = '${cdate}',
+					\`updated_date\` = '${cdate}',
+					\`log\` = '${log1}'
+				WHERE 
+					\`id\` = ${user_date_service[0].id}
+				;
+			`;
+			sqlArray.push(sqltmp);
+
+			net = nf.dec(currency_sale_price - user_service.discount);
+			log2 = JSON.stringify(user_service);
+			sqltmp = `
+				UPDATE 
+					\`user_service\` 
+				SET 
+					\`price\` = ${currency_sale_price},
+					\`net\` = ${net},
+					\`is_closed\` = 1,
+					\`end_date\` = '${cdate}',
+					\`updated_date\` = '${cdate}',
+					\`log\` = '${log2}'
+				WHERE 
+					\`id\` = ${id}
+				;
+			`;
+			sqlArray.push(sqltmp);
+
+			const sqlData = await db.query(
+				`
+					SELECT 
+						\`user\`.\`first_name\` AS \`first_name\`, 
+						\`user\`.\`phone\` AS \`phone\`, 
+						\`service\`.\`name\` AS \`service\`
+					FROM 
+						\`user_service\` AS \`t1\`
+						LEFT JOIN \`service\` AS \`service\` ON \`service\`.\`id\` = \`t1\`.\`service__id\` 
+						LEFT JOIN \`user\` AS \`user\` ON \`user\`.\`id\` = \`t1\`.\`user__id\` 
+					WHERE
+						t1.id = ${id}
+					LIMIT 0,1
+				`,
+				[],
+			);
+			const sqlRes = await db.trx(sqlArray);
+			if (sqlRes) {
+				if (issms == 1) {
+					let to = sqlData[0].phone;
+
+					let cdue = nf.dec(await dueService.getTotal(user__id));
+					let cavd = nf.dec(await advSrv.getBUser(user__id));
+
+					/* msg = `
+						Dear ${sqlData[0].first_name}, your ${sqlData[0].service} has been stopped as requested\n\n
+						Budget $${user_date_service[0].currency_amount} USD\n
+						Spent $${currency_amount} USD\n
+						Remaining $${ramt} USD\n\n
+						This amount has been adjusted from your due or added as advance\n
+						Current Due ${cdue} BDT\n
+						Advance Balance ${cavd} BDT\n\n
+						Need help call 01873200200\n 
+						PROVATi IT
+					`; */
+
+					let msg = `Dear ${sqlData[0].first_name}, your ${sqlData[0].service} has been stopped as requested\n\nBudget $${user_date_service[0].currency_amount} USD\nSpent $${currency_amount} USD\nRemaining $${ramt} USD\n\nThis amount has been adjusted from your due or added as advance\nCurrent Due ${cdue} BDT\nAdvance Balance ${cavd} BDT\n\nNeed help call 01873200200\nPROVATi IT`;
+					smsRes = await sms.sendSms(to, msg);
+					//smsRes = true;
+					if (smsRes == true) {
+						res.status(200).json({
+							error: false,
+							type: "success",
+							msg: "success",
+						});
+						return true;
+					} else {
+						res.status(200).json({
+							error: false,
+							type: "warn",
+							msg: "sms send error",
+						});
+						return true;
+					}
+				}
+
+				res.status(200).json({
+					error: false,
+					type: "success",
+					msg: "success",
+				});
+				return true;
+			} else {
+				res.status(200).json({
+					error: true,
+					type: "error",
+					msg: "sql error",
+				});
+				return true;
+			}
+		} else {
+			res.status(200).json({
+				error: true,
+				type: "error",
+				msg: "user date service not found",
+			});
+			return true;
+		}
+	} catch (err) {
+		res.status(200).json({
+			error: true,
+			type: "error",
+			msg: "db transaction try error",
+			dev: sqlArray,
+			dev2: err,
+		});
+		return true;
+	}
+};
+
 const userServiceView = async (req, res, next) => {
 	// const cdate = dateTime.cDateTime();
 	/////////////////////////////////////////////// begin validation ///////////////////////////////////////////////
@@ -4447,6 +4715,7 @@ module.exports = {
 	Gets,
 	View,
 	Insert,
+	boostClose,
 	userServiceByUser,
 	userServiceView,
 	userServiceGet,

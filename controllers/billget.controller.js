@@ -67,7 +67,7 @@ const DataTable = async (queryObj = false) => {
 			WHERE
 				${srcStr}
 				\`t1\`.\`is_delete\` = 0
-			ORDER BY ${sort_col} ${sort_dir}
+			ORDER BY \`t1\`.\`auto_renew\` DESC, ${sort_col} ${sort_dir}
 			LIMIT ${offset},${limit}
 		`,
 		[],

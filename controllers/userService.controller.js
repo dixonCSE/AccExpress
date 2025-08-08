@@ -11,8 +11,6 @@ const dueService = require("../services/due.service.js");
 const sms = require("../services/sms.service.js");
 const advSrv = require("../services/adv.service.js");
 const db = require("../services/db.service.js");
-const { default: el } = require("date-and-time/locale/el");
-const { user } = require("../config/db.config.js");
 
 const DTQuery = async (queryObj = false) => {
 	let { filter, search, sort, order, offset, limit } = queryObj;
@@ -4236,6 +4234,30 @@ const boostClose = async (req, res, next) => {
 	}
 
 	if (validation) {
+		if (req.params.discount == undefined || req.params.discount == "") {
+			validation = false;
+			validationMsg = "Use amount required";
+			validationData.push({
+				field: "discount",
+				msg: validationMsg,
+			});
+		} else {
+			discount = nf.dec(req.params.discount);
+		}
+	}
+
+	if (validation) {
+		if (discount == undefined || isNaN(discount) || discount < 0) {
+			validation = false;
+			validationMsg = "Use amount is not valid";
+			validationData.push({
+				field: "discount",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
 		if (req.params.issms == undefined || req.params.issms == "") {
 			validation = false;
 			validationMsg = "Is Sms required";
@@ -4301,7 +4323,7 @@ const boostClose = async (req, res, next) => {
 			price = user_date_service[0].currency_sale_price;
 
 			currency_amount = amt;
-			currency_sale_price = nf.dec(currency_amount * price);
+			totalAmount = nf.dec(currency_amount * price);
 			ramt = nf.dec(user_date_service[0].currency_amount - currency_amount);
 
 			log1 = JSON.stringify(user_date_service[0]);
@@ -4311,9 +4333,10 @@ const boostClose = async (req, res, next) => {
 					\`user_date_service\` 
 				SET 
 					\`currency_amount\` = ${currency_amount},
-					\`currency_sale_price\` = ${currency_sale_price},
+					\`total\` = ${totalAmount},
 					\`end_date\` = '${cdate}',
 					\`updated_date\` = '${cdate}',
+					\`is_endsmssend\` = 1,
 					\`log\` = '${log1}'
 				WHERE 
 					\`id\` = ${user_date_service[0].id}
@@ -4321,17 +4344,19 @@ const boostClose = async (req, res, next) => {
 			`;
 			sqlArray.push(sqltmp);
 
-			net = nf.dec(currency_sale_price - user_service.discount);
+			net = nf.dec(totalAmount - discount);
 			log2 = JSON.stringify(user_service);
 			sqltmp = `
 				UPDATE 
 					\`user_service\` 
 				SET 
-					\`price\` = ${currency_sale_price},
+					\`price\` = ${totalAmount},
 					\`net\` = ${net},
+					\`discount\` = ${discount},
 					\`is_closed\` = 1,
 					\`end_date\` = '${cdate}',
 					\`updated_date\` = '${cdate}',
+					\`status__id\` = 2,
 					\`log\` = '${log2}'
 				WHERE 
 					\`id\` = ${id}
@@ -4377,12 +4402,13 @@ const boostClose = async (req, res, next) => {
 
 					let msg = `Dear ${sqlData[0].first_name}, your ${sqlData[0].service} has been stopped as requested\n\nBudget $${user_date_service[0].currency_amount} USD\nSpent $${currency_amount} USD\nRemaining $${ramt} USD\n\nThis amount has been adjusted from your due or added as advance\nCurrent Due ${cdue} BDT\nAdvance Balance ${cavd} BDT\n\nNeed help call 01873200200\nPROVATi IT`;
 					smsRes = await sms.sendSms(to, msg);
-					//smsRes = true;
+					// smsRes = true;
 					if (smsRes == true) {
 						res.status(200).json({
 							error: false,
 							type: "success",
 							msg: "success",
+							msg2: msg,
 						});
 						return true;
 					} else {

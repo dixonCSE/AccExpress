@@ -12,6 +12,7 @@ const adminController = require("../controllers/admin.controller");
 const balanceController = require("../controllers/balance.controller");
 const serviceController = require("../controllers/service.controller");
 const userController = require("../controllers/user.controller");
+const userServiceController = require("../controllers/userService.controller");
 const bankController = require("../controllers/bank.controller");
 const profileController = require("../controllers/profile.controller");
 const paymentController = require("../controllers/payment.controller");
@@ -27,6 +28,7 @@ const billGetController = require("../controllers/billget.controller");
 const billTypeController = require("../controllers/billType.controller");
 const exchangeController = require("../controllers/exchange.controller");
 const paymentSendController = require("../controllers/paymentSend.controller");
+const paymentReturnController = require("../controllers/paymentReturn.controller");
 
 // const storage = multer.diskStorage({
 // 	destination: "./public/uploads/",
@@ -139,6 +141,10 @@ router.get(
 	"/user-service/close/:id/:issms",
 	serviceController.userServiceClose,
 );
+router.get(
+	"/user-service/boost-close/:id/:amt/:discount/:issms",
+	userServiceController.boostClose,
+);
 
 router.get("/bank/gets", bankController.bankGets);
 router.get("/bank/list", bankController.bankList);
@@ -238,6 +244,13 @@ router.get("/payment-send/:id", paymentSendController.Get);
 router.post("/payment-send/insert", paymentSendController.Insert);
 router.post("/payment-send/update", paymentSendController.Update);
 router.delete("/payment-send/delete/:id", paymentSendController.Delete);
+
+router.post("/payment-return/table", paymentReturnController.Table);
+router.get("/payment-return/list", paymentReturnController.List);
+router.get("/payment-return/:id", paymentReturnController.Get);
+router.post("/payment-return/insert", paymentReturnController.Insert);
+router.post("/payment-return/update", paymentReturnController.Update);
+router.delete("/payment-return/delete/:id", paymentReturnController.Delete);
 
 router.get("/bill-pay/list", billPayController.List);
 router.get("/bill-pay/:id", billPayController.Get);

@@ -2575,31 +2575,32 @@ const userBoostServiceInsert = async (req, res, next) => {
 	});
 
 	sqltmp = `
-		INSERT INTO user_service (
-			user__id,
-			service__id,
+		INSERT INTO \`user_service\` (
+			\`user__id\`,
+			\`service__id\`,
 
-			ori_price,
-			buy_price,
-			price,
-			discount,
-			net,
-			payment,
-			due,
+			\`ori_price\`,
+			\`buy_price\`,
+			\`price\`,
+			\`discount\`,
+			\`net\`,
+			\`payment\`,
+			\`due\`,
 
-			note,
+			\`note\`,
 
-			is_install,
-			is_closed,
-			is_boost,
+			\`is_install\`,
+			\`is_closed\`,
+			\`is_boost\`,
 
-			start_date,
-			end_date,
+			\`start_date\`,
+			\`end_date\`,
 
-			type_detail,
+			\`type_detail\`,
+			\`status__id\`,
 
-			created_date,
-			updated_date
+			\`created_date\`,
+			\`updated_date\`
 			) VALUES (
 				${user__id},
 				${service__id},
@@ -2622,6 +2623,7 @@ const userBoostServiceInsert = async (req, res, next) => {
 				'${endDate}',
 
 				'${objStr}',
+				12,
 
 				'${cdate}',
 				'${cdate}'
@@ -2644,20 +2646,20 @@ const userBoostServiceInsert = async (req, res, next) => {
 	}
 
 	sqltmp = `
-		INSERT INTO user_date_service (
-			user_service__id,
+		INSERT INTO \`user_date_service\` (
+			\`user_service__id\`,
 
-			currency_buy_price,
-			currency_sale_price,
-			currency_amount,
-			total,
+			\`currency_buy_price\`,
+			\`currency_sale_price\`,
+			\`currency_amount\`,
+			\`total\`,
 
-			start_date,
-			end_date,
-			is_endsmssend,
+			\`start_date\`,
+			\`end_date\`,
+			\`is_endsmssend\`,
 
-			created_date,
-			updated_date
+			\`created_date\`,
+			\`updated_date\`
 			) VALUES (
 				@liid,
 
@@ -2679,21 +2681,21 @@ const userBoostServiceInsert = async (req, res, next) => {
 	if (tmpPayment > 0) {
 		if (payment > 0 && t2) {
 			sqltmp = `
-				INSERT INTO payment_receive (
-					user__id,
-					service__id,
-					user_service__id,
-					bank__id,
-					wallet__id,
-					payment,
-					trxid,
+				INSERT INTO \`payment_receive\` (
+					\`user__id\`,
+					\`service__id\`,
+					\`user_service__id\`,
+					\`bank__id\`,
+					\`wallet__id\`,
+					\`payment\`,
+					\`trxid\`,
 
-					table_name,
-					row__id,
+					\`table_name\`,
+					\`row__id\`,
 
-					payment_date,
-					created_date,
-					updated_date
+					\`payment_date\`,
+					\`created_date\`,
+					\`updated_date\`
 					) VALUES ( 
 						${user__id},
 						${service__id},
@@ -2722,13 +2724,13 @@ const userBoostServiceInsert = async (req, res, next) => {
 		}
 
 		sqltmp = `
-			INSERT INTO user_service_payment (
-				user_service__id,
-				amount,
+			INSERT INTO \`user_service_payment\` (
+				\`user_service__id\`,
+				\`amount\`,
 
-				payment_receive__id,
-				created_date,
-				updated_date
+				\`payment_receive__id\`,
+				\`created_date\`,
+				\`updated_date\`
 				) 
 				VALUES 
 				(
@@ -2755,13 +2757,13 @@ const userBoostServiceInsert = async (req, res, next) => {
 
 			sqltmp = `
 				INSERT INTO 
-					due_pay 
+					\`due_pay\` 
 					(
-						user__id,
-						amount,
-						payment_receive__id,
-						created_date,
-						updated_date
+						\`user__id\`,
+						\`amount\`,
+						\`payment_receive__id\`,
+						\`created_date\`,
+						\`updated_date\`
 					)
 				VALUES
 				(
@@ -2802,26 +2804,26 @@ const userBoostServiceInsert = async (req, res, next) => {
 						tmpDue = eDue - duePayment;
 
 						sqltmp = `
-								Update 
-									user_service 
+								UPDATE 
+									\`user_service\` 
 								SET 
-									payment = ${tmpPayment},
-									due = ${tmpDue},
-									updated_date = '${cdate}'
+									\`payment\` = ${tmpPayment},
+									\`due\` = ${tmpDue},
+									\`updated_date\` = '${cdate}'
 								WHERE 
-									id = ${eId}
+									\`id\` = ${eId}
 								;
 							`;
 						sqlArray.push(sqltmp);
 
 						sqltmp = `
-								INSERT INTO user_service_payment (
-									user_service__id,
-									amount,
+								INSERT INTO \`user_service_payment\` (
+									\`user_service__id\`,
+									\`amount\`,
 		
-									payment_receive__id,
-									created_date,
-									updated_date
+									\`payment_receive__id\`,
+									\`created_date\`,
+									\`updated_date\`
 									) 
 									VALUES 
 									(

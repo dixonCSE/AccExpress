@@ -1,10 +1,13 @@
 require("dotenv").config();
 
+const datexTime = require("date-and-time");
 const db = require("../services/db.service.js");
 const helper = require("../utils/dbHelper.util.js");
 const dateTime = require("../utils/cdate.util.js");
 const nf = require("../utils/numberFormat.util.js");
-const billService = require("../services/bill.service.js");
+const sms = require("../services/sms.service");
+const dueService = require("../services/due.service");
+const advSrv = require("../services/adv.service");
 
 const DTQuery = async (queryObj = false) => {
 	let { filter, search, sort, order, offset, limit } = queryObj;
@@ -18,7 +21,7 @@ const DTQuery = async (queryObj = false) => {
 
 	filterMap = {
 		id: `\`t1\`.\`id\``,
-		vendor__id: `\`t1\`.\`vendor__id\``,
+		user__id: `\`t1\`.\`user__id\``,
 		bank__id: `\`t1\`.\`bank__id\``,
 	};
 
@@ -30,7 +33,7 @@ const DTQuery = async (queryObj = false) => {
 				OR 
 				\`t1\`.\`amount\` LIKE '%${search}%'
 				OR 
-				\`vendor\`.\`name\` LIKE '%${search}%'
+				\`user\`.\`company\` LIKE '%${search}%'
 				OR 
 				\`bank\`.\`name\` LIKE '%${search}%'
 			) 
@@ -82,16 +85,20 @@ const DTQuery = async (queryObj = false) => {
 			SELECT 
 				\`t1\`.\`id\` AS \`id\`, 
 				\`t1\`.\`created_date\` AS \`created_date\`,
-				\`t1\`.\`vendor__id\` AS \`vendor__id\`,
+				\`t1\`.\`user__id\` AS \`user__id\`,
 				\`t1\`.\`bank__id\` AS \`bank__id\`,
 				\`t1\`.\`amount\` AS \`amount\`,
 				\`t1\`.\`note\` AS \`note\`,
 				\`t1\`.\`trxid\` AS \`trxid\`,
-				\`vendor\`.\`name\` AS \`vendor__name\`,
+				\`t1\`.\`bank_ac\` AS \`bank_ac\`,
+				\`t1\`.\`ac_holder\` AS \`ac_holder\`,
+				\`t1\`.\`bank_branch\` AS \`bank_branch\`,
+				\`t1\`.\`payment_date\` AS \`payment_date\`,
+				\`user\`.\`company\` AS \`user__company\`,
 				\`bank\`.\`name\` AS \`bank__name\`
 			FROM 
-				\`payment_send\` AS \`t1\` 
-				LEFT JOIN \`bill\` AS \`vendor\` ON \`vendor\`.\`id\` = \`t1\`.\`vendor__id\`
+				\`payment_return\` AS \`t1\` 
+				LEFT JOIN \`user\` AS \`user\` ON \`user\`.\`id\` = \`t1\`.\`user__id\`
 				LEFT JOIN \`bank\` AS \`bank\` ON \`bank\`.\`id\` = \`t1\`.\`bank__id\`
 			WHERE
 				${filterStr}
@@ -108,7 +115,7 @@ const DTQuery = async (queryObj = false) => {
 			SELECT 
 				IFNULL(COUNT(\`t1\`.\`id\`), 0) AS \`cnt\`
 			FROM 
-				\`payment_send\` AS \`t1\` 
+				\`payment_return\` AS \`t1\` 
 			WHERE
 				${filterStr}
 				${searchStr}
@@ -240,83 +247,94 @@ const Table = async (req, res, next) => {
 	}
 };
 
-const DataTable = async (queryObj = false) => {
-	let { filter, search, sort, order, offset, limit } = queryObj;
-
-	filter = filter || false;
-	search = search || false;
-	sort_col = sort || db.sortCol;
-	sort_dir = order || db.sortDir;
-	offset = offset || db.offset;
-	limit = limit || db.limit;
-
-	srcStr = "";
-	if (search) {
-		srcStr = `
-			( 
-				\`t1\`.\`id\` LIKE '%${search}%' 
-				OR 
-				\`t1\`.\`amount\` LIKE '%${search}%'
-			) 
-			AND 
-		`;
+const List = async (req, res, next) => {
+	// console.log("req.body: ", req.query);
+	/////////////////////////////////////////////// begin validation ///////////////////////////////////////////////
+	if (
+		req.query.filter === undefined ||
+		req.query.filter == "" ||
+		req.query.filter === null
+	) {
+		filter = false;
+	} else {
+		if (
+			typeof req.query.filter === "object" &&
+			Object.keys(req.query.filter).length > 0
+		) {
+			filter = req.query.filter;
+		} else {
+			filter = false;
+		}
 	}
 
-	const rows = await db.query(
-		`
-			SELECT 
-				\`t1\`.\`id\` AS \`id\`, 
-				\`t1\`.\`created_date\` AS \`created_date\`,
-				\`t1\`.\`amount\` AS \`amount\`,
-				\`t1\`.\`note\` AS \`note\`,
-				\`t1\`.\`trxid\` AS \`trxid\`,
-				\`vendor\`.\`name\` AS \`vendor__name\`,
-				\`bank\`.\`name\` AS \`bank__name\`
-			FROM 
-				\`payment_send\` AS \`t1\` 
-				LEFT JOIN \`bill\` AS \`vendor\` ON \`vendor\`.\`id\` = \`t1\`.\`vendor__id\`
-				LEFT JOIN \`bank\` AS \`bank\` ON \`bank\`.\`id\` = \`t1\`.\`bank__id\`
-			WHERE
-				${srcStr}
-				\`t1\`.\`is_delete\` = 0
-			ORDER BY ${sort_col} ${sort_dir}
-			LIMIT ${offset},${limit}
-		`,
-		[],
-	);
+	if (
+		req.query.search === undefined ||
+		req.query.search == "" ||
+		req.query.search === null
+	) {
+		search = false;
+	} else {
+		search = req.query.search.trim().toString();
+	}
 
-	const count = await db.query(
-		`
-			SELECT 
-				IFNULL(COUNT(\`t1\`.\`id\`), 0) AS \`cnt\`
-			FROM 
-				\`payment_send\` AS \`t1\` 
-			WHERE
-				${srcStr}
-				\`t1\`.\`is_delete\` = 0
-		`,
-		[],
-	);
+	if (
+		req.query.sort === undefined ||
+		req.query.sort == "" ||
+		req.query.sort === null
+	) {
+		sort = false;
+	} else {
+		sort = req.query.sort.trim().toString();
+	}
 
-	const data = helper.emptyOrRows(rows);
-	const meta = {
-		offset: offset,
-		limit: limit,
-		count: count[0].cnt,
-		search: search,
-		sort_col: sort_col,
-		sort_dir: sort_dir,
-	};
+	if (
+		req.query.order === undefined ||
+		req.query.order == "" ||
+		req.query.order === null
+	) {
+		order = false;
+	} else {
+		order = req.query.order.trim().toString();
+	}
 
-	return {
-		data,
-		meta,
-	};
-};
+	if (
+		req.query.offset === undefined ||
+		req.query.offset == "" ||
+		req.query.offset === null
+	) {
+		offset = false;
+	} else {
+		offset = parseInt(req.query.offset);
+	}
 
-const List = async (req, res, next) => {
+	if (offset === undefined || isNaN(offset)) {
+		offset = false;
+	}
+
+	if (
+		req.query.limit === undefined ||
+		req.query.limit == "" ||
+		req.query.limit === null
+	) {
+		limit = false;
+	} else {
+		limit = parseInt(req.query.limit);
+	}
+
+	if (limit === undefined || isNaN(limit) || limit < 1) {
+		limit = false;
+	}
+
 	try {
-		const sqlRes = await DataTable(req.query);
+		QryObj = {
+			filter: filter,
+			search: search,
+			sort: sort,
+			order: order,
+			offset: offset,
+			limit: limit,
+		};
+		const sqlRes = await DTQuery(QryObj);
 
 		res.status(200).json({
 			error: false,
@@ -340,7 +358,7 @@ const List = async (req, res, next) => {
 const View = async (req, res, next) => {
 	try {
 		const rows = await db.getRow({
-			table: "payment_send",
+			table: "payment_return",
 			filter: req.params.id,
 		});
 		res.status(200).json({
@@ -366,7 +384,7 @@ const View = async (req, res, next) => {
 const Get = async (req, res, next) => {
 	try {
 		const rows = await db.getRow({
-			table: "payment_send",
+			table: "payment_return",
 			filter: req.params.id,
 		});
 		res.status(200).json({
@@ -392,7 +410,7 @@ const Get = async (req, res, next) => {
 const Gets = async (req, res, next) => {
 	try {
 		const sqlRes = await db.getRows({
-			table: "payment_send",
+			table: "payment_return",
 			filter: {
 				is_delete: 0,
 			},
@@ -434,46 +452,46 @@ const Insert = async (req, res, next) => {
 	validationMsg = false;
 
 	if (validation) {
-		if (req.body.bill__id == undefined || req.body.bill__id == "") {
+		if (req.body.user__id == undefined || req.body.user__id == "") {
 			validation = false;
-			validationMsg = "Bill required";
+			validationMsg = "Customer required";
 			validationData.push({
-				field: "bill",
+				field: "user",
 				msg: validationMsg,
 			});
 		} else {
-			bill__id = req.body.bill__id;
+			user__id = req.body.user__id;
 		}
 	}
 
 	if (validation) {
-		bill__id = parseInt(bill__id);
-		if (bill__id == undefined || isNaN(bill__id) || bill__id < 1) {
+		user__id = parseInt(user__id);
+		if (user__id == undefined || isNaN(user__id) || user__id < 1) {
 			validation = false;
-			validationMsg = "Bill is not valid";
+			validationMsg = "Customer is not valid";
 			validationData.push({
-				field: "bill",
+				field: "user",
 				msg: validationMsg,
 			});
 		}
 	}
 
 	if (validation) {
-		rowBill = await db.getRow({
-			table: "bill",
-			filter: bill__id,
+		rowuser = await db.getRow({
+			table: "user",
+			filter: user__id,
 		});
 
-		if (rowBill == false) {
+		if (rowuser == false) {
 			validation = false;
-			validationMsg = "Bill Type is not found";
+			validationMsg = "Customer is not found";
 			validationData.push({
-				field: "bill",
+				field: "user",
 				msg: validationMsg,
 			});
 		}
 	}
-
+	//////////
 	if (validation) {
 		if (req.body.bank__id == undefined || req.body.bank__id == "") {
 			validation = false;
@@ -514,7 +532,7 @@ const Insert = async (req, res, next) => {
 			});
 		}
 	}
-
+	//////////
 	if (validation) {
 		if (req.body.payment === undefined || req.body.payment === "") {
 			validation = false;
@@ -544,20 +562,89 @@ const Insert = async (req, res, next) => {
 			}
 		}
 	}
-
+	//////////
 	if (validation) {
-		if (req.body.trxid == undefined || req.body.trxid == "") {
+		if (req.body.paymentDate === undefined || req.body.paymentDate == "") {
+			validation = false;
+			validationMsg = "Payment Date required";
+			validationData.push({
+				field: "paymentDate",
+				msg: validationMsg,
+			});
+		} else {
+			paymentDate = datexTime.format(
+				new Date(req.body.paymentDate),
+				"YYYY-MM-DD HH:mm:ss",
+			);
+			paymentDate2 = datexTime.format(
+				new Date(req.body.paymentDate),
+				"YYYY-MM-DD",
+			);
+		}
+	}
+	//////////
+	if (validation) {
+		if (
+			req.body.trxid === undefined ||
+			req.body.trxid == "" ||
+			req.body.trxid === null
+		) {
 			trxid = `null`;
 		} else {
 			trxid = `'${req.body.trxid.trim().toString()}'`;
 		}
 	}
-
+	//////////
+	if (validation) {
+		if (
+			req.body.bankAc === undefined ||
+			req.body.bankAc == "" ||
+			req.body.bankAc === null
+		) {
+			bankAc = `null`;
+		} else {
+			bankAc = `'${req.body.bankAc.trim().toString()}'`;
+		}
+	}
+	//////////
+	if (validation) {
+		if (
+			req.body.acHolder === undefined ||
+			req.body.acHolder == "" ||
+			req.body.acHolder === null
+		) {
+			acHolder = `null`;
+		} else {
+			acHolder = `'${req.body.acHolder.trim().toString()}'`;
+		}
+	}
+	//////////
+	if (validation) {
+		if (
+			req.body.bankBranch === undefined ||
+			req.body.bankBranch == "" ||
+			req.body.bankBranch === null
+		) {
+			bankBranch = `null`;
+		} else {
+			bankBranch = `'${req.body.bankBranch.trim().toString()}'`;
+		}
+	}
+	//////////
 	if (validation) {
 		if (req.body.note == undefined || req.body.note == "") {
 			note = `null`;
 		} else {
 			note = `'${req.body.note.trim().toString()}'`;
+		}
+	}
+
+	//////////
+	if (validation) {
+		if (req.body.isSms == undefined || req.body.isSms == "") {
+			isSms = false;
+		} else {
+			isSms = !!req.body.isSms;
 		}
 	}
 
@@ -576,31 +663,37 @@ const Insert = async (req, res, next) => {
 	let sqltmp;
 
 	sqltmp = `
-		INSERT INTO \`payment_send\` 
+		INSERT INTO \`payment_return\` 
 		(
-			\`creator__id\`,
-			\`vendor__id\`,
-			\`vendor_type\`,
-
+			\`user__id\`,
 			\`bank__id\`,
 			\`wallet__id\`,
 			\`amount\`,
+
+			\`bank_ac\`,
+			\`ac_holder\`,
+			\`bank_branch\`,
 			
+			\`payment_date\`,
 			\`trxid\`,
+
 			\`note\`,
 			\`created_date\`
 		) 
 		VALUES 
 		(
-			${req.user.id},
-			${bill__id},
-			'bill',
-
+			${user__id},
 			${bank__id},
 			11,
 			${payment},
 
+			${bankAc},
+			${acHolder},
+			${bankBranch},
+
+			'${paymentDate}',
 			${trxid},
+
 			${note},
 			'${cdate}'
 		);
@@ -610,7 +703,23 @@ const Insert = async (req, res, next) => {
 	try {
 		const sqlres = await db.trx(sqlArray);
 		if (sqlres) {
-			billService.recalBill(bill__id);
+			if (isSms) {
+				let to = rowUser.phone;
+				/* 
+				msg = `
+					Dear ${rowuser.first_name},\n
+					Refund Approved Successful.\n
+					Return Amount: ${payment}\n
+					Bank: ${rowbank.name}\n
+					Refund A/C: ${bankAc}\n
+					Please check your provided account.\n 
+					- PROVATi IT | 01873200200
+				`; 
+				*/
+				msg = `Dear ${rowuser.first_name},\nRefund Approved Successful.\nReturn Amount: ${payment}\nBank: ${rowbank.name}\nRefund A/C: ${bankAc}\nPlease check your provided account.\n- PROVATi IT | 01873200200`;
+				smsRes = await sms.sendSms(to, msg);
+			}
+
 			res.status(200).json({
 				error: false,
 				type: "success",
@@ -646,7 +755,11 @@ const Update = async (req, res, next) => {
 	validationMsg = false;
 
 	if (validation) {
-		if (req.body.id == undefined || req.body.id == "") {
+		if (
+			req.body.id === undefined ||
+			req.body.id == "" ||
+			req.body.id === null
+		) {
 			validation = false;
 			validationMsg = "Data ID required";
 			validationData.push({
@@ -660,7 +773,7 @@ const Update = async (req, res, next) => {
 
 	if (validation) {
 		id = parseInt(id);
-		if (id == undefined || isNaN(id) || id < 1) {
+		if (id === undefined || isNaN(id) || id < 1) {
 			validation = false;
 			validationMsg = "Data ID is not valid";
 			validationData.push({
@@ -672,7 +785,7 @@ const Update = async (req, res, next) => {
 
 	if (validation) {
 		row = await db.getRow({
-			table: "payment_send",
+			table: "payment_return",
 			filter: id,
 		});
 
@@ -685,50 +798,58 @@ const Update = async (req, res, next) => {
 			});
 		}
 	}
-
+	//////////
 	if (validation) {
-		if (req.body.bill__id == undefined || req.body.bill__id == "") {
+		if (
+			req.body.user__id === undefined ||
+			req.body.user__id == "" ||
+			req.body.user__id === null
+		) {
 			validation = false;
-			validationMsg = "Bill required";
+			validationMsg = "Customer required";
 			validationData.push({
-				field: "bill",
+				field: "user",
 				msg: validationMsg,
 			});
 		} else {
-			bill__id = req.body.bill__id;
+			user__id = req.body.user__id;
 		}
 	}
 
 	if (validation) {
-		bill__id = parseInt(bill__id);
-		if (bill__id == undefined || isNaN(bill__id) || bill__id < 1) {
+		user__id = parseInt(user__id);
+		if (user__id === undefined || isNaN(user__id) || user__id < 1) {
 			validation = false;
-			validationMsg = "Bill is not valid";
+			validationMsg = "Customer is not valid";
 			validationData.push({
-				field: "bill",
+				field: "user",
 				msg: validationMsg,
 			});
 		}
 	}
 
 	if (validation) {
-		rowBill = await db.getRow({
-			table: "bill",
-			filter: bill__id,
+		rowUser = await db.getRow({
+			table: "user",
+			filter: user__id,
 		});
 
-		if (rowBill == false) {
+		if (rowUser == false) {
 			validation = false;
-			validationMsg = "Bill Type is not found";
+			validationMsg = "Customer Type is not found";
 			validationData.push({
-				field: "bill",
+				field: "user",
 				msg: validationMsg,
 			});
 		}
 	}
-
+	//////////
 	if (validation) {
-		if (req.body.bank__id == undefined || req.body.bank__id == "") {
+		if (
+			req.body.bank__id === undefined ||
+			req.body.bank__id == "" ||
+			req.body.bank__id === null
+		) {
 			validation = false;
 			validationMsg = "bank required";
 			validationData.push({
@@ -742,7 +863,7 @@ const Update = async (req, res, next) => {
 
 	if (validation) {
 		bank__id = parseInt(bank__id);
-		if (bank__id == undefined || isNaN(bank__id) || bank__id < 1) {
+		if (bank__id === undefined || isNaN(bank__id) || bank__id < 1) {
 			validation = false;
 			validationMsg = "Bank is not valid";
 			validationData.push({
@@ -767,9 +888,13 @@ const Update = async (req, res, next) => {
 			});
 		}
 	}
-
+	//////////
 	if (validation) {
-		if (req.body.payment === undefined || req.body.payment === "") {
+		if (
+			req.body.payment === undefined ||
+			req.body.payment === "" ||
+			req.body.payment === null
+		) {
 			validation = false;
 			validationMsg = "Payment required";
 			validationData.push({
@@ -783,7 +908,7 @@ const Update = async (req, res, next) => {
 
 	if (validation) {
 		payment = parseFloat(payment);
-		if (payment == undefined || isNaN(payment) || payment < 0) {
+		if (payment === undefined || isNaN(payment) || payment < 0) {
 			validation = false;
 			validationMsg = "Payment is not valid";
 			validationData.push({
@@ -797,31 +922,84 @@ const Update = async (req, res, next) => {
 			}
 		}
 	}
-
+	//////////
 	if (validation) {
-		if (req.body.trxid == undefined || req.body.trxid == "") {
+		if (req.body.paymentDate == undefined || req.body.paymentDate == "") {
+			validation = false;
+			validationMsg = "Payment Date required";
+			validationData.push({
+				field: "paymentDate",
+				msg: validationMsg,
+			});
+		} else {
+			paymentDate = datexTime.format(
+				new Date(req.body.paymentDate),
+				"YYYY-MM-DD HH:mm:ss",
+			);
+			paymentDate2 = datexTime.format(
+				new Date(req.body.paymentDate),
+				"YYYY-MM-DD",
+			);
+		}
+	}
+	//////////
+	if (validation) {
+		if (
+			req.body.bankAc === undefined ||
+			req.body.bankAc == "" ||
+			req.body.bankAc === null
+		) {
+			bankAc = `null`;
+		} else {
+			bankAc = `'${req.body.bankAc.trim().toString()}'`;
+		}
+	}
+	//////////
+	if (validation) {
+		if (
+			req.body.acHolder === undefined ||
+			req.body.acHolder == "" ||
+			req.body.acHolder === null
+		) {
+			acHolder = `null`;
+		} else {
+			acHolder = `'${req.body.acHolder.trim().toString()}'`;
+		}
+	}
+	//////////
+	if (validation) {
+		if (
+			req.body.bankBranch === undefined ||
+			req.body.bankBranch == "" ||
+			req.body.bankBranch === null
+		) {
+			bankBranch = `null`;
+		} else {
+			bankBranch = `'${req.body.bankBranch.trim().toString()}'`;
+		}
+	}
+	//////////
+	if (validation) {
+		if (
+			req.body.trxid === undefined ||
+			req.body.trxid == "" ||
+			req.body.trxid === null
+		) {
 			trxid = `null`;
 		} else {
 			trxid = `'${req.body.trxid.trim().toString()}'`;
 		}
 	}
-
+	//////////
 	if (validation) {
-		if (req.body.note == undefined || req.body.note == "") {
+		if (
+			req.body.note === undefined ||
+			req.body.note == "" ||
+			req.body.note === null
+		) {
 			note = `null`;
 		} else {
 			note = `'${req.body.note.trim().toString()}'`;
-		}
-	}
-
-	if (validation) {
-		if (duration == undefined || isNaN(duration)) {
-			validation = false;
-			validationMsg = "duration is not valid";
-			validationData.push({
-				field: "duration",
-				msg: validationMsg,
-			});
 		}
 	}
 
@@ -841,12 +1019,16 @@ const Update = async (req, res, next) => {
 
 	sqltmp = `
 		UPDATE
-			\`payment_send\` 
+			\`payment_return\` 
 		SET 
-			\`vendor__id\` = ${bill__id},
+			\`user__id\` = ${user__id},
 			\`bank__id\` = ${bank__id},
-			\`amount\` = ${amount},
+			\`amount\` = ${payment},
+			\`bank_ac\` = ${bankAc},
+			\`ac_holder\` = ${acHolder},
+			\`bank_branch\` = ${bankBranch},
 			\`trxid\` = ${trxid},
+			\`payment_date\` = '${paymentDate}',
 			\`note\` = ${note},
 			\`updated_date\` = '${cdate}'
 		WHERE 
@@ -857,10 +1039,6 @@ const Update = async (req, res, next) => {
 	try {
 		const sqlres = await db.trx(sqlArray);
 		if (sqlres) {
-			billService.recalBill(rowBill.id);
-			if (parseInt(rowBill.id) == bill__id) {
-				billService.recalBill(bill__id);
-			}
 			res.status(200).json({
 				error: false,
 				type: "success",
@@ -922,7 +1100,7 @@ const Delete = async (req, res, next) => {
 
 	if (validation) {
 		row = await db.getRow({
-			table: "payment_send",
+			table: "payment_return",
 			filter: id,
 		});
 
@@ -952,7 +1130,7 @@ const Delete = async (req, res, next) => {
 
 	sqltmp = `
 		UPDATE 
-			\`payment_send\` 
+			\`payment_return\` 
 		SET 
 			\`is_delete\` = 1
 		WHERE 
@@ -964,7 +1142,6 @@ const Delete = async (req, res, next) => {
 	try {
 		const sqlres = await db.trx(sqlArray);
 		if (sqlres) {
-			billService.recalBill(row.vendor__id);
 			res.status(200).json({
 				error: false,
 				type: "success",

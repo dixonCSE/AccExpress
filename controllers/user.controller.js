@@ -9,6 +9,140 @@ const helper = require("../utils/dbHelper.util");
 const dateTime = require("../utils/cdate.util.js");
 const totalService = require("../services/total.service");
 
+const DTQuery = async (queryObj = false) => {
+	let { filter, search, sort, order, offset, limit } = queryObj;
+
+	filter = filter || false;
+	search = search || false;
+	sort_col = sort || db.sortCol;
+	sort_dir = order || db.sortDir;
+	offset = offset || db.offset;
+	limit = limit || db.limit;
+
+	filterMap = {
+		id: `\`t1\`.\`id\``,
+		id: `\`t1\`.\`phone\``,
+	};
+
+	searchStr = "";
+	if (search) {
+		searchStr = `
+			( 
+				\`t1\`.\`id\` LIKE '%${search}%' 
+				OR 
+				\`t1\`.\`company\` LIKE '%${search}%'
+				OR 
+				\`t1\`.\`user_name\` LIKE '%${search}%'
+				OR 
+				\`t1\`.\`phone\` LIKE '%${search}%'
+			) 
+			AND  
+		`;
+	}
+
+	filterStr = "";
+	if (filter) {
+		if (Object.keys(filter).length > 0) {
+			filterStr += ` `;
+			i = 0;
+			for (const [key, value] of Object.entries(filter)) {
+				if (i == 0) {
+				} else {
+					filterStr += ` AND `;
+				}
+
+				tmpType = typeof value;
+				if (tmpType == "object" && Array.isArray(value)) {
+					if (Array.isArray(value)) {
+						filterStr += ` \`${key}\` IN ( `;
+						value.forEach((element, index) => {
+							if (index == 0) {
+								filterStr += `'${element}' `;
+							} else {
+								filterStr += `, '${element}' `;
+							}
+						});
+						filterStr += ` ) `;
+					}
+				} else {
+					const con = key.split(" ");
+					if (con[1] == undefined) {
+						filterStr += ` ${filterMap[key]} = '${value}' `;
+					} else {
+						filterStr += ` ${filterMap[con[0]]} ${con[1]} '${value}' `;
+					}
+				}
+				i++;
+			}
+
+			filterStr += ` AND `;
+		}
+	}
+
+	const rows = await db.query(
+		`
+			SELECT 
+				\`t1\`.\`id\` AS \`id\`, 
+				\`t1\`.\`created_date\` AS \`created_date\`,
+				\`t1\`.\`login_id\` AS \`login_id\`,
+				\`t1\`.\`user_name\` AS \`user_name\`,
+				\`t1\`.\`first_name\` AS \`first_name\`,
+				\`t1\`.\`email\` AS \`email\`,
+				\`t1\`.\`phone\` AS \`phone\`,
+				\`t1\`.\`company\` AS \`company\`,
+				\`t1\`.\`image\` AS \`image\`,
+				\`t1\`.\`is_delete\` AS \`is_delete\`,
+
+			FROM 
+				\`user\` AS \`t1\` 
+			WHERE
+				${filterStr}
+				${searchStr}
+				\`t1\`.\`is_delete\` = 0
+				AND 
+				\`t1\`.\`user_role__id\` IN (
+					SELECT \`id\` FROM \`user_role\` WHERE \`key_code\` = 'user'
+				)
+			ORDER BY ${sort_col} ${sort_dir}
+			LIMIT ${offset}, ${limit}
+		`,
+		[],
+	);
+
+	const count = await db.query(
+		`
+			SELECT 
+				IFNULL(COUNT(\`t1\`.\`id\`), 0) AS \`cnt\`
+			FROM 
+				\`user\` AS \`t1\` 
+			WHERE
+				${filterStr}
+				${searchStr}
+				\`t1\`.\`is_delete\` = 0
+				AND 
+				\`t1\`.\`user_role__id\` IN (
+					SELECT \`id\` FROM \`user_role\` WHERE \`key_code\` = 'user'
+				)
+		`,
+		[],
+	);
+
+	const data = helper.emptyOrRows(rows);
+	const meta = {
+		offset: offset,
+		limit: limit,
+		count: count[0].cnt,
+		search: search,
+		sort_col: sort_col,
+		sort_dir: sort_dir,
+	};
+
+	return {
+		data,
+		meta,
+	};
+};
+
 const userDataTable = async (queryObj = false) => {
 	let { filter, search, sort, order, offset, limit } = queryObj;
 
@@ -414,7 +548,7 @@ const userDetail = async (req, res, next) => {
 						\`user_service\`.\`user__id\` = ?
 						AND
 						\`service_type\`.\`id\` = 2
-					ORDER BY \`t1\`.\`id\` DESC
+					ORDER BY \`t1\`.\`end_date\` DESC
 					LIMIT 0,9999
 				`,
 				[req.params.id],
@@ -425,50 +559,50 @@ const userDetail = async (req, res, next) => {
 			const userDurService = await db.query(
 				`
 					SELECT 
-					t1.id AS id, 
-					t1.user__id AS user__id, 
-					t1.service__id AS service__id, 
-					t1.wallet__id AS wallet__id, 
-					t1.bank__id AS bank__id, 
-					t1.price AS price, 
-					t1.discount AS discount, 
-					t1.net AS net, 
-					t1.payment AS payment, 
-					t1.due AS due, 
-					t1.is_boost AS is_boost, 
-					t1.is_install AS is_install, 
-					t1.auto_renew AS auto_renew, 
-					t1.is_closed AS is_closed, 
-					t1.start_date AS start_date, 
-					t1.end_date AS end_date, 
-					t1.remind_date AS remind_date, 
-					t1.renew_date AS renew_date, 
-					t1.created_date AS created_date,
+					\`t1\`.\`id\` AS \`id\`, 
+					\`t1\`.\`user__id\` AS \`user__id\`, 
+					\`t1\`.\`service__id\` AS \`service__id\`, 
+					\`t1\`.\`wallet__id\` AS \`wallet__id\`, 
+					\`t1\`.\`bank__id\` AS \`bank__id\`, 
+					\`t1\`.\`price\` AS \`price\`, 
+					\`t1\`.\`discount\` AS \`discount\`, 
+					\`t1\`.\`net\` AS \`net\`, 
+					\`t1\`.\`payment\` AS \`payment\`, 
+					\`t1\`.\`due\` AS \`due\`, 
+					\`t1\`.\`is_boost\` AS \`is_boost\`, 
+					\`t1\`.\`is_install\` AS \`is_install\`, 
+					\`t1\`.\`auto_renew\` AS \`auto_renew\`, 
+					\`t1\`.\`is_closed\` AS \`is_closed\`, 
+					\`t1\`.\`start_date\` AS \`start_date\`, 
+					\`t1\`.\`end_date\` AS \`end_date\`, 
+					\`t1\`.\`remind_date\` AS \`remind_date\`, 
+					\`t1\`.\`renew_date\` AS \`renew_date\`, 
+					\`t1\`.\`created_date\` AS \`created_date\`,
 
-					service_type.id AS service_type__id,
-					t2.name AS service__name, 
-					t2.image AS service__image, 
-					t3.user_name AS user__user_name, 
-					t3.image AS user__image, 
-					t3.phone AS user__phone, 
-					t3.company AS user__company, 
-					t4.name AS bank__name, 
-					t5.name AS wallet__name
+					\`service_type\`.\`id\` AS \`service_type__id\`,
+					\`t2\`.\`name\` AS \`service__name\`, 
+					\`t2\`.\`image\` AS \`service__image\`, 
+					\`t3\`.\`user_name\` AS \`user__user_name\`, 
+					\`t3\`.\`image\` AS \`user__image\`, 
+					\`t3\`.\`phone\` AS \`user__phone\`, 
+					\`t3\`.\`company\` AS \`user__company\`, 
+					\`t4\`.\`name\` AS \`bank__name\`, 
+					\`t5\`.\`name\` AS \`wallet__name\`
 				FROM 
-					user_service AS t1
-					LEFT JOIN service AS t2 ON t2.id = t1.service__id 
-					LEFT JOIN service_type AS service_type ON service_type.id = t2.service_type__id 
-					LEFT JOIN user AS t3 ON t3.id = t1.user__id 
-					LEFT JOIN bank AS t4 ON t4.id = t1.bank__id 
-					LEFT JOIN wallet AS t5 ON t5.id = t1.wallet__id
+					\`user_service\` AS \`t1\`
+					LEFT JOIN \`service\` AS \`t2\` ON \`t2\`.\`id\` = \`t1\`.\`service__id\` 
+					LEFT JOIN \`service_type\` AS \`service_type\` ON \`service_type\`.\`id\` = \`t2\`.\`service_type__id\` 
+					LEFT JOIN \`user\` AS \`t3\` ON \`t3\`.\`id\` = \`t1\`.\`user__id\` 
+					LEFT JOIN \`bank\` AS \`t4\` ON \`t4\`.\`id\` = \`t1\`.\`bank__id\` 
+					LEFT JOIN \`wallet\` AS \`t5\` ON \`t5\`.\`id\` = \`t1\`.\`wallet__id\`
 				WHERE
-					t1.is_delete = 0
+					\`t1\`.\`is_delete\` = 0
 					AND 
-					t1.user__id = ?
+					\`t1\`.\`user__id\` = ?
 					AND
-					service_type.id = 3
+					\`service_type\`.\`id\` = 3
 	
-				ORDER BY t1.id DESC
+				ORDER BY \`t1\`.\`is_closed\` ASC, \`t1\`.\`id\` DESC
 				LIMIT 0,9999
 				`,
 				[req.params.id],

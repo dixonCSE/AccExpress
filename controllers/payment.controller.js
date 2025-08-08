@@ -506,7 +506,7 @@ const receiveInsert = async (req, res, next) => {
 	if (validation) {
 		if (req.body.paymentDate == undefined || req.body.paymentDate == "") {
 			validation = false;
-			validationMsg = "Start Date required";
+			validationMsg = "Payment Date required";
 			validationData.push({
 				field: "paymentDate",
 				msg: validationMsg,
@@ -1249,162 +1249,6 @@ const receiveDelete = async (req, res, next) => {
 	}
 };
 
-const returnList = async (req, res, next) => {
-	try {
-		const rows = await db.getRows({
-			table: "service",
-			limit: 900,
-		});
-		res.status(200).json({
-			error: false,
-			type: "success",
-			logout: false,
-			msg: "Access granted",
-			data: await rows,
-		});
-		return false;
-	} catch (err) {
-		res.status(200).json({
-			error: true,
-			type: "error",
-			logout: false,
-			msg: "Try block Error",
-			devMsg: err,
-		});
-		return true;
-	}
-};
-
-const returnView = async (req, res, next) => {
-	try {
-		const rows = await db.getRows({
-			table: "service",
-			limit: 900,
-		});
-		res.status(200).json({
-			error: false,
-			type: "success",
-			logout: false,
-			msg: "Access granted",
-			data: await rows,
-		});
-		return false;
-	} catch (err) {
-		res.status(200).json({
-			error: true,
-			type: "error",
-			logout: false,
-			msg: "Try block Error",
-			devMsg: err,
-		});
-		return true;
-	}
-};
-
-const returnGet = async (req, res, next) => {
-	try {
-		const rows = await db.getRows({
-			table: "service",
-			limit: 900,
-		});
-		res.status(200).json({
-			error: false,
-			type: "success",
-			logout: false,
-			msg: "Access granted",
-			data: await rows,
-		});
-		return false;
-	} catch (err) {
-		res.status(200).json({
-			error: true,
-			type: "error",
-			logout: false,
-			msg: "Try block Error",
-			devMsg: err,
-		});
-		return true;
-	}
-};
-
-const returnInsert = async (req, res, next) => {
-	try {
-		const rows = await db.getRows({
-			table: "service",
-			limit: 900,
-		});
-		res.status(200).json({
-			error: false,
-			type: "success",
-			logout: false,
-			msg: "Access granted",
-			data: await rows,
-		});
-		return false;
-	} catch (err) {
-		res.status(200).json({
-			error: true,
-			type: "error",
-			logout: false,
-			msg: "Try block Error",
-			devMsg: err,
-		});
-		return true;
-	}
-};
-
-const returnUpdate = async (req, res, next) => {
-	try {
-		const rows = await db.getRows({
-			table: "service",
-			limit: 900,
-		});
-		res.status(200).json({
-			error: false,
-			type: "success",
-			logout: false,
-			msg: "Access granted",
-			data: await rows,
-		});
-		return false;
-	} catch (err) {
-		res.status(200).json({
-			error: true,
-			type: "error",
-			logout: false,
-			msg: "Try block Error",
-			devMsg: err,
-		});
-		return true;
-	}
-};
-
-const returnDelete = async (req, res, next) => {
-	try {
-		const rows = await db.getRows({
-			table: "service",
-			limit: 900,
-		});
-		res.status(200).json({
-			error: false,
-			type: "success",
-			logout: false,
-			msg: "Access granted",
-			data: await rows,
-		});
-		return false;
-	} catch (err) {
-		res.status(200).json({
-			error: true,
-			type: "error",
-			logout: false,
-			msg: "Try block Error",
-			devMsg: err,
-		});
-		return true;
-	}
-};
-
 module.exports = {
 	receiveList,
 	receiveGet,
@@ -1413,11 +1257,4 @@ module.exports = {
 	receiveInsert,
 	receiveUpdate,
 	receiveDelete,
-
-	returnList,
-	returnView,
-	returnGet,
-	returnInsert,
-	returnUpdate,
-	returnDelete,
 };

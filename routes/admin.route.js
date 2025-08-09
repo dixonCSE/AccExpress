@@ -29,6 +29,7 @@ const billTypeController = require("../controllers/billType.controller");
 const exchangeController = require("../controllers/exchange.controller");
 const paymentSendController = require("../controllers/paymentSend.controller");
 const paymentReturnController = require("../controllers/paymentReturn.controller");
+const productNserviceController = require("../controllers/productNservice.controller");
 
 // const storage = multer.diskStorage({
 // 	destination: "./public/uploads/",
@@ -263,5 +264,15 @@ router.get("/exchange/:id", exchangeController.Get);
 router.post("/exchange/insert", exchangeController.Insert);
 router.post("/exchange/update", exchangeController.Update);
 router.delete("/exchange/delete/:id", exchangeController.Delete);
+
+router.post("/product-n-service/table", productNserviceController.Table);
+router.get("/product-n-service/list", productNserviceController.List);
+router.get("/product-n-service/:id", productNserviceController.Get);
+router.post("/product-n-service/insert", productNserviceController.Insert);
+router.post("/product-n-service/update", productNserviceController.Update);
+router.delete(
+	"/product-n-service/delete/:id",
+	productNserviceController.Delete,
+);
 
 module.exports = router;

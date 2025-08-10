@@ -477,12 +477,12 @@ const Insert = async (req, res, next) => {
 	}
 
 	if (validation) {
-		rowuser = await db.getRow({
+		rowUser = await db.getRow({
 			table: "user",
 			filter: user__id,
 		});
 
-		if (rowuser == false) {
+		if (rowUser == false) {
 			validation = false;
 			validationMsg = "Customer is not found";
 			validationData.push({
@@ -702,21 +702,22 @@ const Insert = async (req, res, next) => {
 
 	try {
 		const sqlres = await db.trx(sqlArray);
+
 		if (sqlres) {
 			if (isSms) {
 				let to = rowUser.phone;
-				/* 
+				/*
 				msg = `
-					Dear ${rowuser.first_name},\n
+					Dear ${rowUser.first_name},\n
 					Refund Approved Successful.\n
 					Return Amount: ${payment}\n
 					Bank: ${rowbank.name}\n
 					Refund A/C: ${bankAc}\n
-					Please check your provided account.\n 
+					Please check your provided account.\n
 					- PROVATi IT | 01873200200
-				`; 
+				`;
 				*/
-				msg = `Dear ${rowuser.first_name},\nRefund Approved Successful.\nReturn Amount: ${payment}\nBank: ${rowbank.name}\nRefund A/C: ${bankAc}\nPlease check your provided account.\n- PROVATi IT | 01873200200`;
+				msg = `Dear ${rowUser.first_name},\nRefund Approved Successful.\nReturn Amount: ${payment}\nBank: ${rowbank.name}\nRefund A/C: ${bankAc}\nPlease check your provided account.\n- PROVATi IT | 01873200200`;
 				smsRes = await sms.sendSms(to, msg);
 			}
 

@@ -184,44 +184,54 @@ const RemindSms = async (req, res, next) => {
 		);
 
 		if (list.length > 0) {
-			list.forEach(async (item, index) => {
-				let sqlArray = [];
-				let sqltmp;
+			// list.forEach(async (item, index) => { // method 1
 
-				let to = item.phone;
-				let renewDate2 = datexTime.format(
-					new Date(item.end_date),
-					"D MMM, YYYY",
-				);
+			// for (const item of list) {  // method 2
 
-				sqltmp = `
-					UPDATE 
-						\`user_service\` 
-					SET 
-						\`is_remind\` = 0
-					WHERE 
-						\`id\` = ${item.id}
-					;
-				`;
-				sqlArray.push(sqltmp);
-				sqlTmpArray.push(sqltmp);
+			const resultsx = await Promise.all(
+				// method 3
+				list.map(async (item) => {
+					////////
+					let sqlArray = [];
+					let sqltmp;
 
-				/* 
-				msg = `
-					Dear ${item.first_name},\n \n
-					Your ${item.service__name} service is set to expire on ${renewDate2}.\n
-					To enjoy uninterrupted service, please renew before expiry.\n\n
-					Need help? Reply or call us. 01873200200\n
-					PROVATi IT
-				`; 
-				*/
+					let to = item.phone;
+					let renewDate2 = datexTime.format(
+						new Date(item.end_date),
+						"D MMM, YYYY",
+					);
 
-				let sqlres = await db.trx(sqlArray);
-				sqlArray = [];
+					sqltmp = `
+						UPDATE 
+							\`user_service\` 
+						SET 
+							\`is_remind\` = 0
+						WHERE 
+							\`id\` = ${item.id}
+						;
+					`;
+					sqlArray.push(sqltmp);
+					sqlTmpArray.push(sqltmp);
 
-				let msg = `Dear ${item.first_name},\n \nYour ${item.service__name} service is set to expire on ${renewDate2}.\nTo enjoy uninterrupted service, please renew before expiry.\n\nNeed help? Reply or call us. 01873200200\nPROVATi IT`;
-				let smsRes = await sms.sendSms(to, msg);
-			});
+					/* 
+					msg = `
+						Dear ${item.first_name},\n \n
+						Your ${item.service__name} service is set to expire on ${renewDate2}.\n
+						To enjoy uninterrupted service, please renew before expiry.\n\n
+						Need help? Reply or call us. 01873200200\n
+						PROVATi IT
+					`; 
+					*/
+
+					let sqlres = await db.trx(sqlArray);
+					sqlArray = [];
+
+					let msg = `Dear ${item.first_name},\n \nYour ${item.service__name} service is set to expire on ${renewDate2}.\nTo enjoy uninterrupted service, please renew before expiry.\n\nNeed help? Reply or call us. 01873200200\nPROVATi IT`;
+					let smsRes = await sms.sendSms(to, msg);
+					// }); // method 1
+					// } // method 2
+				}),
+			); // method 3
 
 			res.status(200).json({
 				error: false,
@@ -290,179 +300,194 @@ const Renew = async (req, res, next) => {
 		// let sqltmp = null;
 
 		if (list.length > 0) {
-			list.forEach(async (item, index) => {
-				let sqlArray = []; //
-				let sqltmp = null; //
+			//list.forEach(async (item, index) => {
 
-				let xduration = Number(item.duration) - 1;
-				let rduration = xduration - remindBefore;
+			const resultsx = await Promise.all(
+				// method 3
+				list.map(async (item) => {
+					let sqlArray = []; //
+					let sqltmp = null; //
 
-				let price = nf.dec(item.price);
+					let xduration = Number(item.duration) - 1;
+					let rduration = xduration - remindBefore;
 
-				let adv = nf.dec(await advSrv.getBUser(item.user__id));
-				let totalOldDue = nf.dec(await dueService.getTotal(item.user__id));
+					let price = nf.dec(item.price);
 
-				let cadv = adv - price;
-				let cdue = totalOldDue + price - adv;
-				if (adv > price) {
-					cadv = adv - price;
-					cdue = 0;
-				} else {
-					cadv = 0;
-					cdue = totalOldDue + price - adv;
-				}
+					let adv = nf.dec(await advSrv.getBUser(item.user__id));
+					let totalOldDue = nf.dec(await dueService.getTotal(item.user__id));
 
-				let startDate = datexTime.format(
-					new Date(item.renew_date),
-					"YYYY-MM-DD 00:00:00",
-				);
+					let cadv = adv - price;
+					let cdue = totalOldDue + price - adv;
+					if (adv > price) {
+						cadv = adv - price;
+						cdue = 0;
+					} else {
+						cadv = 0;
+						cdue = totalOldDue + price - adv;
+					}
 
-				let endDate = datexTime.format(
-					datexTime.addDays(new Date(item.renew_date), xduration),
-					"YYYY-MM-DD 23:59:59",
-				);
+					let startDate = datexTime.format(
+						new Date(item.renew_date),
+						"YYYY-MM-DD 00:00:00",
+					);
 
-				let renewDate = datexTime.format(
-					datexTime.addDays(new Date(item.renew_date), item.duration),
-					"YYYY-MM-DD 00:00:00",
-				);
+					let endDate = datexTime.format(
+						datexTime.addDays(new Date(item.renew_date), xduration),
+						"YYYY-MM-DD 23:59:59",
+					);
 
-				let nextEndDate2 = datexTime.format(new Date(renewDate), "D MMM, YYYY");
+					let renewDate = datexTime.format(
+						datexTime.addDays(new Date(item.renew_date), item.duration),
+						"YYYY-MM-DD 00:00:00",
+					);
 
-				let remindDate = datexTime.format(
-					datexTime.addDays(new Date(item.renew_date), rduration),
-					"YYYY-MM-DD 23:59:59",
-				);
+					let nextEndDate2 = datexTime.format(
+						new Date(renewDate),
+						"D MMM, YYYY",
+					);
 
-				sqltmp = `
-					UPDATE 
-						\`user_service\` 
-					SET 
-						\`auto_renew\` = 0,
-						\`is_closed\` = 1
-					WHERE 
-						\`id\` = ${item.id}
-					;
-				`;
-				sqlArray.push(sqltmp);
+					let remindDate = datexTime.format(
+						datexTime.addDays(new Date(item.renew_date), rduration),
+						"YYYY-MM-DD 23:59:59",
+					);
 
-				sqltmp = `
-					INSERT INTO \`user_service\` (
-						\`user__id\`,
-						\`service__id\`,
+					sqltmp = `
+						UPDATE 
+							\`user_service\` 
+						SET 
+							\`auto_renew\` = 0,
+							\`is_closed\` = 1
+						WHERE 
+							\`id\` = ${item.id}
+						;
+					`;
+					sqlArray.push(sqltmp);
 
-						\`main_service__id\`,
+					sqltmp = `
+						INSERT INTO \`user_service\` (
+							\`user__id\`,
+							\`service__id\`,
 
-						\`ori_price\`,
-						\`buy_price\`,
-						\`price\`,
-						\`net\`,
+							\`main_service__id\`,
 
-						\`note\`,
-						\`is_closed\`,
-						\`is_boost\`,
+							\`ori_price\`,
+							\`buy_price\`,
+							\`price\`,
+							\`net\`,
 
-						\`start_date\`,
-						\`end_date\`,
-						\`remind_date\`,
-						\`renew_date\`,
+							\`note\`,
+							\`is_closed\`,
+							\`is_boost\`,
 
-						\`duration\`,
-						\`auto_renew\`,
+							\`start_date\`,
+							\`end_date\`,
+							\`remind_date\`,
+							\`renew_date\`,
 
-						\`created_date\`,
-						\`updated_date\`
-						) VALUES (
-							${item.user__id},
-							${item.service__id},
-							
-							${item.id},
+							\`duration\`,
+							\`auto_renew\`,
 
-							${item.ori_price},
-							${item.buy_price},
-							${item.price},
-							${item.price},
+							\`created_date\`,
+							\`updated_date\`
+							) VALUES (
+								${item.user__id},
+								${item.service__id},
+								
+								${item.id},
 
-							'auto renew',
-							0,
-							0,
+								${item.ori_price},
+								${item.buy_price},
+								${item.price},
+								${item.price},
 
-							'${startDate}',
-							'${endDate}',
-							'${remindDate}',
-							'${renewDate}',
+								'auto renew',
+								0,
+								0,
 
-							'${item.duration}',
-							1,
+								'${startDate}',
+								'${endDate}',
+								'${remindDate}',
+								'${renewDate}',
 
-							'${cdate}',
-							'${cdate}'
-						);
-				`;
-				sqlArray.push(sqltmp);
+								'${item.duration}',
+								1,
 
-				// msg = `
-				// 	Dear ${item.first_name},\n
-				// 	Your ${item.service__name} service has been successfully renewed.\n
-				// 	Next Renewal: ${nextEndDate2}\n\n
-				// 	Current Bill: ${price}\n
-				// 	Previous Advance: ${adv}\n
-				// 	Previous Due: ${totalOldDue}\n
-				// 	Current Advance: ${cadv}\n
-				// 	Current Due: ${cdue}\n\n
-				// 	Need help? Reply or call us. 01873200200\n
-				// 	PROVATi IT
-				// `;
+								'${cdate}',
+								'${cdate}'
+							);
+					`;
+					sqlArray.push(sqltmp);
 
-				let msg = `Dear ${item.first_name},\nYour ${item.service__name} service has been successfully renewed.\nNext Renewal: ${nextEndDate2}\n\nCurrent Bill: ${price}\nPrevious Advance: ${adv}\nPrevious Due: ${totalOldDue}\nCurrent Advance: ${cadv}\nCurrent Due: ${cdue}\n\nNeed help? Reply or call us. 01873200200\nPROVATi IT`;
+					// msg = `
+					// 	Dear ${item.first_name},\n
+					// 	Your ${item.service__name} service has been successfully renewed.\n
+					// 	Next Renewal: ${nextEndDate2}\n\n
+					// 	Current Bill: ${price}\n
+					// 	Previous Advance: ${adv}\n
+					// 	Previous Due: ${totalOldDue}\n
+					// 	Current Advance: ${cadv}\n
+					// 	Current Due: ${cdue}\n\n
+					// 	Need help? Reply or call us. 01873200200\n
+					// 	PROVATi IT
+					// `;
 
-				let to = item.phone;
-				msgList.push({
-					to: to,
-					message: msg,
-				});
+					let msg = `Dear ${item.first_name},\nYour ${item.service__name} service has been successfully renewed.\nNext Renewal: ${nextEndDate2}\n\nCurrent Bill: ${price}\nPrevious Advance: ${adv}\nPrevious Due: ${totalOldDue}\nCurrent Advance: ${cadv}\nCurrent Due: ${cdue}\n\nNeed help? Reply or call us. 01873200200\nPROVATi IT`;
 
-				// console.log(to);
-				// console.log(msg);
-				// console.log(sqlArray);
-				// console.log(`-id-${item.id}-name -${item.service__name}-`);
+					let to = item.phone;
+					msgList.push({
+						to: to,
+						message: msg,
+					});
 
-				let sqlres = await db.trx(sqlArray);
-				sqlArray = [];
+					// console.log(to);
+					// console.log(msg);
+					// console.log(sqlArray);
+					// console.log(`-id-${item.id}-name -${item.service__name}-`);
 
-				let smsRes = await sms.sendSms(to, msg);
-			});
+					let sqlres = await db.trx(sqlArray);
+					sqlArray = [];
+
+					let smsRes = await sms.sendSms(to, msg);
+					//});
+				}),
+			); // method 3
 
 			//const sqlres = await db.trx(sqlArray);
 
-			// if (sqlres) {
-			if (true) {
-				// smsRes = await sms.sendSmsM2M(msgList);
+			res.status(200).json({
+				error: false,
+				type: "success",
+				msg: "success",
+			});
+			return true;
+			// // if (sqlres) {
+			// if (true) {
+			// 	// smsRes = await sms.sendSmsM2M(msgList);
 
-				// if (smsRes == false) {
-				if (true) {
-					res.status(200).json({
-						error: false,
-						type: "success",
-						msg: "success",
-					});
-					return true;
-				} else {
-					res.status(200).json({
-						error: false,
-						type: "warn",
-						msg: "msg not send",
-					});
-					return true;
-				}
-			} else {
-				res.status(200).json({
-					error: true,
-					type: "error",
-					msg: "error",
-				});
-				return true;
-			}
+			// 	// if (smsRes == false) {
+			// 	if (true) {
+			// 		res.status(200).json({
+			// 			error: false,
+			// 			type: "success",
+			// 			msg: "success",
+			// 		});
+			// 		return true;
+			// 	} else {
+			// 		res.status(200).json({
+			// 			error: false,
+			// 			type: "warn",
+			// 			msg: "msg not send",
+			// 		});
+			// 		return true;
+			// 	}
+			// } else {
+			// 	res.status(200).json({
+			// 		error: true,
+			// 		type: "error",
+			// 		msg: "error",
+			// 	});
+			// 	return true;
+			// }
 		}
 
 		let renewBillres = await pRenewBill();
@@ -872,43 +897,49 @@ const EndBoostSms = async (req, res, next) => {
 		);
 
 		if (list.length > 0) {
-			list.forEach(async (item, index) => {
-				let sqlArray = [];
-				let sqltmp;
+			// list.forEach(async (item, index) => {
+			const resultsx = await Promise.all(
+				// method 3
+				list.map(async (item) => {
+					let sqlArray = [];
+					let sqltmp;
 
-				let to = item.phone;
-				// let to = "01711156085";
-				let endDate2 = datexTime.format(
-					new Date(item.end_date),
-					"D MMM, YYYY hh:mm A",
-				);
+					let to = item.phone;
+					// let to = "01711156085";
+					let endDate2 = datexTime.format(
+						new Date(item.end_date),
+						"D MMM, YYYY hh:mm A",
+					);
 
-				sqltmp = `
-					UPDATE 
-						\`user_date_service\` 
-					SET 
-						\`is_endsmssend\` = 1
-					WHERE 
-						\`id\` = ${item.id}
-					;
-				`;
-				sqlArray.push(sqltmp);
+					sqltmp = `
+						UPDATE 
+							\`user_date_service\` 
+						SET 
+							\`is_endsmssend\` = 1
+						WHERE 
+							\`id\` = ${item.id}
+						;
+					`;
+					sqlArray.push(sqltmp);
 
-				/* 
-				msg = `
-					Your ${service__name} is successfully completed.\n
-					at ${endDate2}.\n
-					Stay tuned for the next update.\n
-					Need help? Call: 01873200200
-				`; 
-				*/
+					/* 
+					msg = `
+						Your ${service__name} is successfully completed.\n
+						at ${endDate2}.\n
+						Stay tuned for the next update.\n
+						Need help? Call: 01873200200
+					`; 
+					*/
 
-				let sqlres = await db.trx(sqlArray);
-				sqlArray = [];
+					let sqlres = await db.trx(sqlArray);
+					sqlArray = [];
 
-				let msg = `Your ${item.service__name} is successfully completed.\nat ${endDate2}.\nStay tuned for the next update.\nNeed help? Call: 01873200200`;
-				let smsRes = await sms.sendSms(to, msg);
-			});
+					let msg = `Your ${item.service__name} is successfully completed.\nat ${endDate2}.\nStay tuned for the next update.\nNeed help? Call: 01873200200`;
+					let smsRes = await sms.sendSms(to, msg);
+					// });
+				}),
+			);
+			// method 3
 
 			res.status(200).json({
 				error: false,

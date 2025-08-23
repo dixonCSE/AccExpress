@@ -4326,8 +4326,22 @@ const boostClose = async (req, res, next) => {
 			totalAmount = nf.dec(currency_amount * price);
 			ramt = nf.dec(user_date_service[0].currency_amount - currency_amount);
 
-			log1 = JSON.stringify(user_date_service[0]);
+			// log1 = btoa(JSON.stringify(user_date_service[0]));
 
+			// sqltmp = `
+			// 	UPDATE
+			// 		\`user_date_service\`
+			// 	SET
+			// 		\`currency_amount\` = ${currency_amount},
+			// 		\`total\` = ${totalAmount},
+			// 		\`end_date\` = '${cdate}',
+			// 		\`updated_date\` = '${cdate}',
+			// 		\`is_endsmssend\` = 1,
+			// 		\`log\` = '${log1}'
+			// 	WHERE
+			// 		\`id\` = ${user_date_service[0].id}
+			// 	;
+			// `;
 			sqltmp = `
 				UPDATE 
 					\`user_date_service\` 
@@ -4336,8 +4350,7 @@ const boostClose = async (req, res, next) => {
 					\`total\` = ${totalAmount},
 					\`end_date\` = '${cdate}',
 					\`updated_date\` = '${cdate}',
-					\`is_endsmssend\` = 1,
-					\`log\` = '${log1}'
+					\`is_endsmssend\` = 1
 				WHERE 
 					\`id\` = ${user_date_service[0].id}
 				;
@@ -4345,7 +4358,23 @@ const boostClose = async (req, res, next) => {
 			sqlArray.push(sqltmp);
 
 			net = nf.dec(totalAmount - discount);
-			log2 = JSON.stringify(user_service);
+			//log2 = btoa(JSON.stringify(user_service));
+			// sqltmp = `
+			// 	UPDATE
+			// 		\`user_service\`
+			// 	SET
+			// 		\`price\` = ${totalAmount},
+			// 		\`net\` = ${net},
+			// 		\`discount\` = ${discount},
+			// 		\`is_closed\` = 1,
+			// 		\`end_date\` = '${cdate}',
+			// 		\`updated_date\` = '${cdate}',
+			// 		\`status__id\` = 2,
+			// 		\`log\` = '${log2}'
+			// 	WHERE
+			// 		\`id\` = ${id}
+			// 	;
+			// `;
 			sqltmp = `
 				UPDATE 
 					\`user_service\` 
@@ -4356,37 +4385,36 @@ const boostClose = async (req, res, next) => {
 					\`is_closed\` = 1,
 					\`end_date\` = '${cdate}',
 					\`updated_date\` = '${cdate}',
-					\`status__id\` = 2,
-					\`log\` = '${log2}'
+					\`status__id\` = 2
 				WHERE 
 					\`id\` = ${id}
 				;
 			`;
 			sqlArray.push(sqltmp);
 
-			const sqlData = await db.query(
-				`
-					SELECT 
-						\`user\`.\`first_name\` AS \`first_name\`, 
-						\`user\`.\`phone\` AS \`phone\`, 
-						\`service\`.\`name\` AS \`service\`
-					FROM 
-						\`user_service\` AS \`t1\`
-						LEFT JOIN \`service\` AS \`service\` ON \`service\`.\`id\` = \`t1\`.\`service__id\` 
-						LEFT JOIN \`user\` AS \`user\` ON \`user\`.\`id\` = \`t1\`.\`user__id\` 
-					WHERE
-						t1.id = ${id}
-					LIMIT 0,1
-				`,
-				[],
-			);
 			const sqlRes = await db.trx(sqlArray);
 			if (sqlRes) {
 				if (issms == 1) {
+					const sqlData = await db.query(
+						`
+							SELECT 
+								\`user\`.\`first_name\` AS \`first_name\`, 
+								\`user\`.\`phone\` AS \`phone\`, 
+								\`service\`.\`name\` AS \`service\`
+							FROM 
+								\`user_service\` AS \`t1\`
+								LEFT JOIN \`service\` AS \`service\` ON \`service\`.\`id\` = \`t1\`.\`service__id\` 
+								LEFT JOIN \`user\` AS \`user\` ON \`user\`.\`id\` = \`t1\`.\`user__id\` 
+							WHERE
+								\`t1\`.\`id\` = ${id}
+							LIMIT 0,1
+						`,
+						[],
+					);
 					let to = sqlData[0].phone;
 
-					let cdue = nf.dec(await dueService.getTotal(user__id));
 					let cavd = nf.dec(await advSrv.getBUser(user__id));
+					let cdue = nf.dec(await dueService.getTotal(user__id));
 
 					/* msg = `
 						Dear ${sqlData[0].first_name}, your ${sqlData[0].service} has been stopped as requested\n\n

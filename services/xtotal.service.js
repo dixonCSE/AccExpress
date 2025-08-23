@@ -59,42 +59,38 @@ const totalPaid = async () => {
 };
 
 const totalAdv = async () => {
-	try {
-		const [xDue, Pay, serviceAmt] = await Promise.all([
-			db.colSum({
-				table: "previous_due_adv",
-				col: "amount",
-				filter: {
-					is_delete: 0,
-					is_due: 1,
-				},
-			}),
-			db.colSum({
-				table: "payment_receive",
-				col: "payment_receive",
-				filter: {
-					is_delete: 0,
-				},
-			}),
-			db.colSum({
-				table: "user_service",
-				col: "net",
-				filter: {
-					is_delete: 0,
-				},
-			}),
-		]);
+	xDue = await db.colSum({
+		table: "previous_due_adv",
+		col: "amount",
+		filter: {
+			is_delete: 0,
+			is_due: 1,
+		},
+	});
 
-		total = nf.dec(nf.dec(Pay) - nf.dec(serviceAmt) - nf.dec(xDue));
+	Pay = await db.colSum({
+		table: "payment_receive",
+		col: "payment",
+		filter: {
+			is_delete: 0,
+		},
+	});
 
-		if (total < 0) {
-			total = nf.dec(0);
-		}
-		return total;
-	} catch (error) {
-		console.error("One of the try failed:", error);
-		return 0;
+	serviceAmt = await db.colSum({
+		table: "user_service",
+		col: "net",
+		filter: {
+			is_delete: 0,
+		},
+	});
+
+	total = Pay - serviceAmt - xDue;
+
+	if (total < 0) {
+		total = 0;
 	}
+
+	return nf.dec(total);
 
 	// return {
 	// 	data: oldDue,
@@ -105,41 +101,40 @@ const totalAdv = async () => {
 };
 
 const totalDue = async () => {
-	try {
-		const [oldDue, Pay, serviceAmount] = await Promise.all([
-			db.colSum({
-				table: "previous_due_adv",
-				col: "amount",
-				filter: {
-					is_delete: 0,
-					is_due: 1,
-				},
-			}),
-			db.colSum({
-				table: "payment_receive",
-				col: "payment",
-				filter: {
-					is_delete: 0,
-				},
-			}),
-			db.colSum({
-				table: "user_service",
-				col: "net",
-				filter: {
-					is_delete: 0,
-				},
-			}),
-		]);
-		console.log(oldDue, Pay, serviceAmount);
-		total = nf.dec(nf.dec(oldDue) - nf.dec(Pay) + nf.dec(serviceAmount));
-		if (total < 0) {
-			total = nf.dec(0);
-		}
-		return total;
-	} catch (error) {
-		console.error("One of the try failed:", error);
-		return 0;
+	oldDue = await db.colSum({
+		table: "previous_due_adv",
+		col: "amount",
+		filter: {
+			is_delete: 0,
+			is_due: 1,
+		},
+	});
+
+	Pay = await db.colSum({
+		table: "payment_receive",
+		col: "payment",
+		filter: {
+			is_delete: 0,
+		},
+	});
+
+	serviceAmount = await db.colSum({
+		table: "user_service",
+		col: "net",
+		filter: {
+			is_delete: 0,
+		},
+	});
+
+	total = oldDue - Pay + serviceAmount;
+
+	if (total < 0) {
+		total = 0;
 	}
+
+	//console.log(`total = ${oldDue} - ${Pay} + ${serviceAmount}`);
+
+	return nf.dec(total);
 
 	// return {
 	// 	data: oldDue,
@@ -150,44 +145,43 @@ const totalDue = async () => {
 };
 
 const totalDueByUser = async (user__id = false) => {
-	try {
-		const [oldDue, Pay, serviceAmount] = await Promise.all([
-			db.colSum({
-				table: "previous_due_adv",
-				col: "amount",
-				filter: {
-					user__id: user__id,
-					is_delete: 0,
-					is_due: 1,
-				},
-			}),
-			db.colSum({
-				table: "payment_receive",
-				col: "payment",
-				filter: {
-					user__id: user__id,
-					is_delete: 0,
-				},
-			}),
-			db.colSum({
-				table: "user_service",
-				col: "net",
-				filter: {
-					user__id: user__id,
-					is_delete: 0,
-				},
-			}),
-		]);
-		console.log(oldDue, Pay, serviceAmount);
-		total = nf.dec(nf.dec(oldDue) - nf.dec(Pay) + nf.dec(serviceAmount));
-		if (total < 0) {
-			total = nf.dec(0);
-		}
-		return total;
-	} catch (error) {
-		console.error("One of the try failed:", error);
-		return 0;
+	oldDue = await db.colSum({
+		table: "previous_due_adv",
+		col: "amount",
+		filter: {
+			user__id: user__id,
+			is_delete: 0,
+			is_due: 1,
+		},
+	});
+
+	Pay = await db.colSum({
+		table: "payment_receive",
+		col: "payment",
+		filter: {
+			user__id: user__id,
+			is_delete: 0,
+		},
+	});
+
+	serviceAmount = await db.colSum({
+		table: "user_service",
+		col: "net",
+		filter: {
+			user__id: user__id,
+			is_delete: 0,
+		},
+	});
+
+	total = oldDue - Pay + serviceAmount;
+
+	if (total < 0) {
+		total = 0;
 	}
+
+	//console.log(`total = ${oldDue} - ${Pay} + ${serviceAmount}`);
+
+	return nf.dec(total);
 
 	// return {
 	// 	data: oldDue,
@@ -198,36 +192,32 @@ const totalDueByUser = async (user__id = false) => {
 };
 
 const OldDueByUser = async (user__id = false) => {
-	try {
-		const [oldDue, duePay] = await Promise.all([
-			db.colSum({
-				table: "previous_due_adv",
-				col: "amount",
-				filter: {
-					user__id: user__id,
-					is_delete: 0,
-					is_due: 1,
-				},
-			}),
-			db.colSum({
-				table: "due_pay",
-				col: "amount",
-				filter: {
-					user__id: user__id,
-					is_delete: 0,
-				},
-			}),
-		]);
+	oldDue = await db.colSum({
+		table: "previous_due_adv",
+		col: "amount",
+		filter: {
+			user__id: user__id,
+			is_delete: 0,
+			is_due: 1,
+		},
+	});
 
-		total = nf.dec(nf.dec(oldDue) - nf.dec(duePay));
-		if (total < 0) {
-			total = nf.dec(0);
-		}
-		return total;
-	} catch (error) {
-		console.error("One of the try failed:", error);
-		return 0;
+	duePay = await db.colSum({
+		table: "due_pay",
+		col: "amount",
+		filter: {
+			user__id: user__id,
+			is_delete: 0,
+		},
+	});
+
+	total = oldDue - duePay;
+
+	if (total < 0) {
+		total = 0;
 	}
+
+	return nf.dec(total);
 
 	// return {
 	// 	data: oldDue,
@@ -238,46 +228,42 @@ const OldDueByUser = async (user__id = false) => {
 };
 
 const totalAdvByUser = async (user__id = false) => {
-	try {
-		const [xDue, Pay, serviceAmt] = await Promise.all([
-			db.colSum({
-				table: "previous_due_adv",
-				col: "amount",
-				filter: {
-					user__id: user__id,
-					"amount >": 0,
-					is_delete: 0,
-					is_due: 1,
-				},
-			}),
-			db.colSum({
-				table: "payment_receive",
-				col: "payment",
-				filter: {
-					user__id: user__id,
-					is_delete: 0,
-				},
-			}),
-			db.colSum({
-				table: "user_service",
-				col: "net",
-				filter: {
-					user__id: user__id,
-					is_delete: 0,
-				},
-			}),
-		]);
+	xDue = await db.colSum({
+		table: "previous_due_adv",
+		col: "amount",
+		filter: {
+			user__id: user__id,
+			"amount >": 0,
+			is_delete: 0,
+			is_due: 1,
+		},
+	});
 
-		total = nf.dec(nf.dec(Pay) - nf.dec(serviceAmt) - nf.dec(xDue));
+	Pay = await db.colSum({
+		table: "payment_receive",
+		col: "payment",
+		filter: {
+			user__id: user__id,
+			is_delete: 0,
+		},
+	});
 
-		if (total < 0) {
-			total = nf.dec(0);
-		}
-		return total;
-	} catch (error) {
-		console.error("One of the try failed:", error);
-		return 0;
+	serviceAmt = await db.colSum({
+		table: "user_service",
+		col: "net",
+		filter: {
+			user__id: user__id,
+			is_delete: 0,
+		},
+	});
+
+	total = Pay - serviceAmt - xDue;
+
+	if (total < 0) {
+		total = 0;
 	}
+
+	return nf.dec(total);
 
 	// return {
 	// 	data: oldDue,

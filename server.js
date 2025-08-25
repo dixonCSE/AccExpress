@@ -16,6 +16,8 @@ app.use(cors());
 app.use(express.json());
 app.use("/public", express.static("public"));
 
+global.myVar = "Hello from global!";
+
 app.get("/", async (req, res) => {
 	res.status(200).json({
 		message: "accept authenticated.",

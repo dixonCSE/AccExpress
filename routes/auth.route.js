@@ -21,6 +21,10 @@ router.post(
 
 	async (req, res) => {
 		///////////////////////////////////////////// begin validation /////////////////////////////////////////////
+		// console.log("myVar ddccd");
+		// setting.set("myVar", "Hello, World!");
+		// console.log(setting.get("myVar"));
+		// console.log(setting.get("theme"));
 		const errors = validationResult(req);
 		if (!errors.isEmpty()) {
 			// return res

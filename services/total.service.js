@@ -71,7 +71,7 @@ const totalAdv = async () => {
 			}),
 			db.colSum({
 				table: "payment_receive",
-				col: "payment_receive",
+				col: "payment",
 				filter: {
 					is_delete: 0,
 				},

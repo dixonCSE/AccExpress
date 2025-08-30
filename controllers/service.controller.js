@@ -3298,6 +3298,59 @@ const userDurationServiceInsert = async (req, res, next) => {
 	}
 
 	if (validation) {
+		if (
+			req.body.auto_renew === undefined ||
+			req.body.auto_renew == "" ||
+			req.body.auto_renew === null
+		) {
+			auto_renew = false;
+			autoRenew = 0;
+		} else {
+			auto_renew = !!req.body.auto_renew;
+			autoRenew = auto_renew ? 1 : 0;
+		}
+	}
+
+	if (validation) {
+		if (req.body.renewAmount == undefined || req.body.renewAmount == "") {
+			/* validation = false;
+			validationMsg = "Service Renew price required";
+			validationData.push({
+				field: "renewAmount",
+				msg: validationMsg,
+			}); */
+			renewAmount = 0;
+		} else {
+			renewAmount = req.body.renewAmount;
+		}
+	}
+
+	if (validation) {
+		renewAmount = parseFloat(renewAmount);
+		if (renewAmount == undefined || isNaN(renewAmount)) {
+			validation = false;
+			validationMsg = "Service Renew price is not valid";
+			validationData.push({
+				field: "renewAmount",
+				msg: validationMsg,
+			});
+		} else {
+			renewAmount = nf.dec(renewAmount);
+		}
+	}
+
+	if (validation) {
+		if (renewAmount < 0) {
+			validation = false;
+			validationMsg = "Service Renew price < 0";
+			validationData.push({
+				field: "renewAmount",
+				msg: validationMsg,
+			});
+		}
+	}
+
+	if (validation) {
 		if (req.body.isSms == undefined || req.body.isSms == "") {
 			isSms = false;
 		} else {
@@ -3392,6 +3445,7 @@ const userDurationServiceInsert = async (req, res, next) => {
 
 			duration,
 			auto_renew,
+			renew_amount,
 
 			created_date,
 			updated_date
@@ -3417,7 +3471,8 @@ const userDurationServiceInsert = async (req, res, next) => {
 				'${renewDate}',
 
 				'${duration}',
-				1,
+				${autoRenew},
+				${renewAmount},
 
 				'${cdate}',
 				'${cdate}'

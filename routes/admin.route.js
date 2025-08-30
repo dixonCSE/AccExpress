@@ -30,6 +30,7 @@ const exchangeController = require("../controllers/exchange.controller");
 const paymentSendController = require("../controllers/paymentSend.controller");
 const paymentReturnController = require("../controllers/paymentReturn.controller");
 const productNserviceController = require("../controllers/productNservice.controller");
+const { user } = require("../config/db.config");
 
 // const storage = multer.diskStorage({
 // 	destination: "./public/uploads/",
@@ -123,6 +124,10 @@ router.get("/user-service/list", serviceController.userServiceList);
 router.get("/user-service/user/:id", serviceController.userServiceByUser);
 router.post("/user-service/insert", serviceController.userServiceInsert);
 router.get("/user-service/:id", serviceController.userServiceGet);
+router.get(
+	"/user-service-boost/:id",
+	userServiceController.userBoostServiceGet,
+);
 router.post(
 	"/user-boost-service/insert",
 	serviceController.userBoostServiceInsert,
@@ -130,7 +135,7 @@ router.post(
 router.post("/user-service/update", serviceController.userServiceUpdate);
 router.post(
 	"/user-service/boost-update",
-	serviceController.userBoostServiceUpdate,
+	userServiceController.userBoostServiceUpdate,
 );
 router.delete("/user-service/delete/:id", serviceController.userServiceDelete);
 

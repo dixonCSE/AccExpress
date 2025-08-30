@@ -11,6 +11,7 @@ const dueService = require("../services/due.service.js");
 const sms = require("../services/sms.service.js");
 const advSrv = require("../services/adv.service.js");
 const db = require("../services/db.service.js");
+const { table } = require("console");
 
 const DTQuery = async (queryObj = false) => {
 	let { filter, search, sort, order, offset, limit } = queryObj;
@@ -1733,6 +1734,67 @@ const userServiceInsert = async (req, res, next) => {
 			dev2: err,
 		});
 		return false;
+	}
+};
+
+const userBoostServiceGet = async (req, res, next) => {
+	try {
+		const userService = await db.getRow({
+			table: "user_service",
+			filter: req.params.id,
+		});
+
+		if (userService == false) {
+			res.status(404).json({
+				error: true,
+				type: "error",
+				msg: "error",
+			});
+			return false;
+		}
+
+		const userDateService = await db.getRow({
+			table: "user_date_service",
+			filter: { user_service__id: userService.id },
+		});
+
+		if (userDateService == false) {
+			res.status(404).json({
+				error: true,
+				type: "error",
+				msg: "error",
+			});
+			return false;
+		}
+
+		const userPayment = await db.getRow({
+			table: "payment_receive",
+			filter: {
+				table_name: "user_service",
+				row__id: userService.id,
+			},
+		});
+
+		res.status(200).json({
+			error: false,
+			type: "success",
+			msg: "Access granted",
+			data: {
+				userService: userService,
+				userDateService: userDateService,
+				userPayment: userPayment,
+			},
+		});
+		return false;
+	} catch (err) {
+		res.status(200).json({
+			error: true,
+			type: "error",
+			logout: false,
+			msg: "Try block Error",
+			devMsg: err,
+		});
+		return true;
 	}
 };
 
@@ -3888,6 +3950,7 @@ const userBoostServiceUpdate = async (req, res, next) => {
 			//
 		}
 	}
+	///
 
 	if (validation) {
 		if (req.body.user__id == undefined || req.body.user__id == "") {
@@ -3929,7 +3992,7 @@ const userBoostServiceUpdate = async (req, res, next) => {
 			});
 		}
 	}
-
+	///
 	if (validation) {
 		if (req.body.service__id == undefined || req.body.service__id == "") {
 			validation = false;
@@ -3971,79 +4034,115 @@ const userBoostServiceUpdate = async (req, res, next) => {
 		}
 	}
 	////
-
 	if (validation) {
-		if (req.body.buyAmount === undefined || req.body.buyAmount === "") {
+		if (req.body.saleRate === undefined || req.body.saleRate === "") {
 			validation = false;
-			validationMsg = "Service Buy Price required";
+			validationMsg = "Currency sale Price required";
 			validationData.push({
-				field: "buyAmount",
+				field: "saleRate",
 				msg: validationMsg,
 			});
 		} else {
-			buyAmount = req.body.buyAmount;
+			saleRate = req.body.saleRate;
 		}
 	}
 
 	if (validation) {
-		buyAmount = parseFloat(buyAmount);
-		if (buyAmount == undefined || isNaN(buyAmount)) {
+		saleRate = parseFloat(saleRate);
+		if (saleRate == undefined || isNaN(saleRate)) {
 			validation = false;
-			validationMsg = "Service Buy Price is not valid";
+			validationMsg = "Currency Sale Price is not valid";
 			validationData.push({
-				field: "buyAmount",
+				field: "saleRate",
 				msg: validationMsg,
 			});
 		} else {
-			buyAmount = nf.dec(buyAmount);
+			saleRate = nf.dec(saleRate);
 		}
 	}
 
 	if (validation) {
-		if (buyAmount < 0) {
+		if (saleRate < 0) {
 			validation = false;
-			validationMsg = "Service Buy Price < 0";
+			validationMsg = "Currency sale Price < 0";
 			validationData.push({
-				field: "buyAmount",
+				field: "saleRate",
 				msg: validationMsg,
 			});
 		}
 	}
-	/////
-
+	///
 	if (validation) {
-		if (req.body.saleAmount == undefined || req.body.saleAmount == "") {
+		if (req.body.buyRate === undefined || req.body.buyRate === "") {
 			validation = false;
-			validationMsg = "Service Sale Price required";
+			validationMsg = "Currency Buy Price required";
 			validationData.push({
-				field: "saleAmount",
-				msg: validationMsg,
-			});
-		} else {
-			saleAmount = req.body.saleAmount;
-		}
-	}
-
-	if (validation) {
-		saleAmount = parseFloat(saleAmount);
-		if (saleAmount == undefined || isNaN(saleAmount)) {
-			validation = false;
-			validationMsg = "Service Sale Price is not valid";
-			validationData.push({
-				field: "saleAmount",
+				field: "buyRate",
 				msg: validationMsg,
 			});
 		} else {
-			saleAmount = nf.dec(saleAmount);
+			buyRate = req.body.buyRate;
 		}
 	}
 
 	if (validation) {
-		if (saleAmount < 0) {
+		buyRate = parseFloat(buyRate);
+		if (buyRate == undefined || isNaN(buyRate)) {
 			validation = false;
-			validationMsg = "Service Sale Price < 0";
+			validationMsg = "Currency Buy Price is not valid";
 			validationData.push({
-				field: "saleAmount",
+				field: "buyRate",
+				msg: validationMsg,
+			});
+		} else {
+			buyRate = nf.dec(buyRate);
+		}
+	}
+
+	if (validation) {
+		if (buyRate < 0) {
+			validation = false;
+			validationMsg = "Dollar Buy Price < 0";
+			validationData.push({
+				field: "buyRate",
+				msg: validationMsg,
+			});
+		}
+	}
+	///
+	if (validation) {
+		if (req.body.useAmount === undefined || req.body.useAmount === "") {
+			validation = false;
+			validationMsg = "Currency user required";
+			validationData.push({
+				field: "useAmount",
+				msg: validationMsg,
+			});
+		} else {
+			useAmount = req.body.useAmount;
+		}
+	}
+
+	if (validation) {
+		useAmount = parseFloat(useAmount);
+		if (useAmount == undefined || isNaN(useAmount)) {
+			validation = false;
+			validationMsg = "Currency use valid";
+			validationData.push({
+				field: "useAmount",
+				msg: validationMsg,
+			});
+		} else {
+			useAmount = nf.dec(useAmount);
+		}
+	}
+
+	if (validation) {
+		if (useAmount < 0) {
+			validation = false;
+			validationMsg = "Currency use < 0";
+			validationData.push({
+				field: "useAmount",
 				msg: validationMsg,
 			});
 		}
@@ -4086,7 +4185,74 @@ const userBoostServiceUpdate = async (req, res, next) => {
 			});
 		}
 	}
+	///
+	if (validation) {
+		if (req.body.startDate == undefined || req.body.startDate == "") {
+			validation = false;
+			validationMsg = "Start Date required";
+			validationData.push({
+				field: "startDate",
+				msg: validationMsg,
+			});
+		} else {
+			startDatex = datexTime.format(
+				new Date(req.body.startDate),
+				"YYYY-MM-DD HH:mm:ss",
+			);
+			startDate = datexTime.format(new Date(req.body.startDate), "YYYY-MM-DD");
+			startDate2 = datexTime.format(new Date(req.body.startDate), "YYYY-MM-DD");
+			startDate3 = datexTime.format(new Date(req.body.startDate), "DD MMM, YY");
+		}
+	}
 
+	if (validation) {
+		if (req.body.startTime == undefined || req.body.startTime == "") {
+			validation = false;
+			validationMsg = "End Time required";
+			validationData.push({
+				field: "startTime",
+				msg: validationMsg,
+			});
+		} else {
+			startTime = datexTime.format(new Date(req.body.startTime), "HH:mm:ss");
+
+			startDate = startDate2 + " " + startTime;
+		}
+	}
+	///
+	if (validation) {
+		if (req.body.endDate == undefined || req.body.endDate == "") {
+			validation = false;
+			validationMsg = "End Date required";
+			validationData.push({
+				field: "endDate",
+				msg: validationMsg,
+			});
+		} else {
+			// endDate = datexTime.format(
+			// 	new Date(req.body.endDate),
+			// 	"YYYY-MM-DD HH:mm:ss",
+			// );
+			endDate = datexTime.format(new Date(req.body.endDate), "YYYY-MM-DD");
+			endDate2 = datexTime.format(new Date(req.body.endDate), "YYYY-MM-DD");
+			endDate3 = datexTime.format(new Date(req.body.endDate), "DD MMM, YY");
+		}
+	}
+
+	if (validation) {
+		if (req.body.endTime == undefined || req.body.endTime == "") {
+			validation = false;
+			validationMsg = "End Time required";
+			validationData.push({
+				field: "endTime",
+				msg: validationMsg,
+			});
+		} else {
+			endTime = datexTime.format(new Date(req.body.endTime), "HH:mm:ss");
+			endDate = endDate2 + " " + endTime;
+		}
+	}
+	///
 	if (validation) {
 		if (req.body.note == undefined || req.body.note == "") {
 			note = `null`;
@@ -4108,9 +4274,12 @@ const userBoostServiceUpdate = async (req, res, next) => {
 
 	let sqlArray = [];
 	let sqltmp;
-	let net = nf.dec(saleAmount - discount);
 
-	sqltmp = `
+	saletotal = nf.dec(useAmount * saleRate);
+	buytotal = nf.dec(useAmount * buyRate);
+	net = nf.dec(saletotal - discount);
+
+	/* sqltmp = `
 		UPDATE 
 			\`user_service\` 
 		SET 
@@ -4127,6 +4296,45 @@ const userBoostServiceUpdate = async (req, res, next) => {
 			\`updated_date\` = '${cdate}'
 		WHERE 
 			\`id\` = ${row.id}
+		;
+	`; */
+
+	sqltmp = `
+		UPDATE 
+			\`user_service\` 
+		SET 
+			\`buy_price\` = ${buytotal},
+			\`price\` = ${saletotal},
+			\`discount\` = ${discount},
+			\`net\` = ${net},
+
+			\`start_date\` = '${startDate}',
+			\`end_date\` = '${endDate}',
+
+			\`note\` = ${note},
+
+			\`updated_date\` = '${cdate}'
+		WHERE 
+			\`id\` = ${row.id}
+		;
+	`;
+	sqlArray.push(sqltmp);
+
+	sqltmp = `
+		UPDATE 
+			\`user_date_service\` 
+		SET 
+			\`currency_buy_price\` = ${buyRate},
+			\`currency_sale_price\` = ${saleRate},
+			\`currency_amount\` = ${useAmount},
+			\`total\` = ${saletotal},
+
+			\`start_date\` = '${startDate}',
+			\`end_date\` = '${endDate}',
+
+			\`updated_date\` = '${cdate}'
+		WHERE 
+			\`user_service__id\` = ${row.id}
 		;
 	`;
 	sqlArray.push(sqltmp);
@@ -4776,6 +4984,7 @@ module.exports = {
 	userServiceInsert,
 	userServiceUpdate,
 	userServiceDelete,
+	userBoostServiceGet,
 	userBoostServiceInsert,
 	userBoostServiceUpdate,
 	userDurationServiceInsert,

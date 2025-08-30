@@ -2,7 +2,7 @@ require("dotenv").config();
 const db = require("./db.service.js");
 
 const sendSms = async (to, msg) => {
-	smsStatus = await fetch("https://sms.mram.com.bd/smsapi", {
+	smsStatus = await fetch("https://xxxxsms.mram.com.bd/smsapi", {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -35,7 +35,7 @@ const sendSms = async (to, msg) => {
 };
 
 const sendSmsM2M = async (msgList) => {
-	smsStatus = await fetch("https://sms.mram.com.bd/smsapimanyps", {
+	smsStatus = await fetch("https://xxxsms.mram.com.bd/smsapimanyps", {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
